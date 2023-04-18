@@ -5,7 +5,7 @@ CFLAGS=-I$(IDIR)
 ODIR=obj
 LDIR =../lib
 
-LIBS=-lm
+LIBS=-lSDL2
 
 _DEPS =
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
