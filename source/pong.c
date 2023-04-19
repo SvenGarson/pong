@@ -1,14 +1,17 @@
 #include <stdio.h>
 #include <pong_bool.h>
 #include <stdint.h>
+#include <text_renderer.h>
 
 /* SDL and OpenGL related includes */
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <GL/glu.h>
+#include <SDL2/SDL_image.h>
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
+#define MAX_PATH_LENGTH (512)
 
 /* Constants */
 const char * WINDOW_TITLE = "Pong";
@@ -26,6 +29,14 @@ int main(void)
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
   {
     fprintf(stderr, "\n[SDL] Could not initialize subsystems - Error: %s\n", SDL_GetError());
+    return -1;
+  }
+
+  /* Initialize SDL image */
+  const int required_image_flags = IMG_INIT_PNG;
+  if (!(IMG_Init(required_image_flags) & required_image_flags))
+  {
+    fprintf(stderr, "\n[SDL_Image] Could not required image types - Error: %s\n", IMG_GetError());
     return -1;
   }
 
@@ -69,9 +80,12 @@ int main(void)
   /* Initialize OpenGL state */
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
+  gluOrtho2D(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
+
+  glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
   glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
@@ -86,6 +100,29 @@ int main(void)
   /* Gameloop timing */
   uint64_t fps_counter_last = SDL_GetPerformanceCounter();
   int frames_per_second = 0;
+
+  /* Load required images TODO-GS: Free loaded image resources */
+  char image_path[MAX_PATH_LENGTH];
+  snprintf(image_path, MAX_PATH_LENGTH, "%s%s/%s", SDL_GetBasePath(), "../resources/images", "glyph_design.png");
+  SDL_Surface * p_text_glyph_image = IMG_Load(image_path);
+  if (p_text_glyph_image == NULL)
+  {
+    fprintf(stderr, "\n[SDL_Image] Could not load image '%s' - Error: %s\n", image_path, IMG_GetError());
+    return -1;
+  }
+
+  /* Construct OpenGL texture from loaded images as surface - TODO-GS: Make sure to check alignment with padded texture surface rows */
+  /* Solution: https://stackoverflow.com/questions/25771735/creating-opengl-texture-from-sdl2-surface-strange-pixel-values */
+  GLuint text_glyph_texture_handle;
+  glGenTextures(1, &text_glyph_texture_handle);
+  glBindTexture(GL_TEXTURE_2D, text_glyph_texture_handle);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, p_text_glyph_image->w, p_text_glyph_image->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, p_text_glyph_image->pixels);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  SDL_FreeSurface(p_text_glyph_image);
+
+  /* Testing state - TODO-GS: Remove this */
+  int x = 0;
 
   /* Gameloop */
   pong_bool_te window_close_requested = PONG_FALSE;
@@ -132,21 +169,58 @@ int main(void)
       }
     }
 
+    /* Clear scene */
+    glClear(GL_COLOR_BUFFER_BIT);
+
     /* Render scene */
+    /* Color triangle */
+    glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
     glBegin(GL_TRIANGLES);
-      glColor3ub(255, 0, 0);
-      glVertex2f(-0.8f, -0.8f);
+      glVertex2i(50, 50);
+      glVertex2i(800 - 50, 50);
+      glVertex2i(800 - 50, 600 - 50);
+    glEnd();
 
-      glColor3ub(0, 255, 0);
-      glVertex2f( 0.8f, -0.8f);
+    /* Font rendering */
+    glColor3ub(255, 255, 255);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+    glBindTexture(GL_TEXTURE_2D, text_glyph_texture_handle);
 
-      glColor3ub(0, 0, 255);
-      glVertex2f( 0.8f,  0.8f);
+    struct text_renderer_cache cache;
+    text_renderer_text_info("ABCDEFGHI\nFGH", 5, 9, 9 * 5, &cache);  
+
+    glBegin(GL_QUADS);
+    for (int i = 0; i < cache.glyph_infos_generated; i++)
+    {
+      const struct text_renderer_glyph_info * p_info = cache.glyph_infos + i;
+      /*
+      printf("\n\tRender from [%5d, %5d] to [%5d, %5d]", p_info->render_region.min.x, p_info->render_region.min.y, p_info->render_region.max.x, p_info->render_region.max.y);
+      printf("\n\tTexcrd from [%f, %f] to [%f, %f]", p_info->texcoords_region.min.x, p_info->texcoords_region.min.y, p_info->texcoords_region.max.x, p_info->texcoords_region.max.y);
+      */
+      glTexCoord2f(p_info->texcoords_region.min.x, p_info->texcoords_region.max.y);
+      glVertex2i(p_info->render_region.min.x, p_info->render_region.min.y);
+
+      glTexCoord2f(p_info->texcoords_region.max.x, p_info->texcoords_region.max.y);
+      glVertex2i(p_info->render_region.max.x, p_info->render_region.min.y);
+
+      glTexCoord2f(p_info->texcoords_region.max.x, p_info->texcoords_region.min.y);
+      glVertex2i(p_info->render_region.max.x, p_info->render_region.max.y);
+
+      glTexCoord2f(p_info->texcoords_region.min.x, p_info->texcoords_region.min.y);
+      glVertex2i(p_info->render_region.min.x, p_info->render_region.max.y);
+    }
     glEnd();
 
     /* Swap buffers */
     SDL_GL_SwapWindow(p_window);
   }
+
+  /* Cleanup SDL image resources */
+  IMG_Quit();
 
   /* Cleanup resources and quit SDL subsystems before returning to OS */
   SDL_DestroyWindow(p_window);

@@ -38,8 +38,9 @@ This document contains working notes throughout the completion of the project
     + Back to main menu
     + Restart and whatnot
 - Options
+  + Window resolution and border/fullscreen
+  + Display sync options
   + Input mapping
-  + Window
   + Resolution
   + Scaling
   + Sounds and volume
@@ -53,16 +54,36 @@ This document contains working notes throughout the completion of the project
 - Platforms
   + Windows
   + Linux
+- Publishing
+  + Publish the thing somewhere through builds
+  + Provide build tools like make/Cmake
 - Q & A
+  + Size and position everything to some virtual resolution or let things grow naturally?
+    Also use min and max dimensions for everything.
   + Bouncing
     - How should the balls be deflected on paddle hits exactly?
       Should the player be able to deflect in a certain direction based on the contact point?
     - How to handle when the bottom or top of the paddle hits the ball?
       Deflect vertically but still bypass the hitting paddle?
+  + How to make builds for different platforms?
+  + How to test the game?
 
-## Tech
-- Implement testing and development builds
+## Code
+- Use a linter
+- Implement testing and development build flags - Through executable arguments?
 
 ## Finalizing
 - Implement debugging/dev switch
 - Handle all Todo's
+- Working and other un-necessary directories are removed
+- Documentation
+
+## Things to do for the next clean project
+- use a linter everywhere (also checking indentation)
+- specify a specific C standard to use before starting development
+- decouple rendering (using sync or not) from the updates
+- crossplatform directory path building
+- show SDL and other dependency related errors through SDL window messages rather than loggin
+  through standard files, which no-one will ever see + add some logs or something
+- handling window operations properly in OpenGL when changed
+- use preprocessor line numbers and names for errors etc.

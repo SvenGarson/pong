@@ -10,10 +10,10 @@ ODIR=obj
 LDIR =../lib
 
 # Linked libraries
-LIBS=-lSDL2 -lGL -lGLU
+LIBS=-lSDL2 -lGL -lGLU -lSDL2_image
 
 # Header that source files depend on
-_DEPS = pong_bool.h
+_DEPS = pong_bool.h text_renderer.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 # Compilation unit object files to build
