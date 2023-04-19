@@ -1,13 +1,17 @@
 #include <stdio.h>
 #include <pong_bool.h>
+#include <stdint.h>
 
 /* SDL and OpenGL related includes */
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <GL/glu.h>
 
+/* Defines */
+#define WINDOW_MAX_TITLE_LENGTH (64)
+
 /* Constants */
-const char * P_WINDOW_TITLE = "Pong";
+const char * WINDOW_TITLE = "Pong";
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
@@ -19,7 +23,7 @@ int main(void)
   SDL_GLContext * p_opengl_context = NULL;
 
   /* Initialize SDL subsystems */
-  if (SDL_Init(SDL_INIT_VIDEO) < 0)
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
   {
     fprintf(stderr, "\n[SDL] Could not initialize subsystems - Error: %s\n", SDL_GetError());
     return -1;
@@ -31,7 +35,7 @@ int main(void)
 
   /* Create the SDL rendering window */
   p_window = SDL_CreateWindow(
-    P_WINDOW_TITLE,
+    WINDOW_TITLE,
     SDL_WINDOWPOS_CENTERED,
     SDL_WINDOWPOS_CENTERED,
     WINDOW_WIDTH,
@@ -79,10 +83,37 @@ int main(void)
     return -1;
   }
 
+  /* Gameloop timing */
+  uint64_t fps_counter_last = SDL_GetPerformanceCounter();
+  int frames_per_second = 0;
+
   /* Gameloop */
   pong_bool_te window_close_requested = PONG_FALSE;
   while(window_close_requested == PONG_FALSE)
   {
+    /* FPS counter */
+    frames_per_second++;
+    const uint64_t fps_counter_new = SDL_GetPerformanceCounter();
+    const uint64_t fps_counter_delta = fps_counter_new - fps_counter_last;
+    const double fps_delta_seconds = (double)fps_counter_delta / (double)SDL_GetPerformanceFrequency();
+    if (fps_delta_seconds > 1.0)
+    {
+      /* Update FPS counter in title */
+      char fps_window_title[WINDOW_MAX_TITLE_LENGTH];
+      snprintf(
+        fps_window_title,
+        WINDOW_MAX_TITLE_LENGTH,
+        "%s - FPS: %d",
+        WINDOW_TITLE,
+        frames_per_second
+      );
+      SDL_SetWindowTitle(p_window, fps_window_title);
+
+      /* Reset counter */
+      fps_counter_last = fps_counter_new;
+      frames_per_second = 0;
+    }
+
     /* Poll events */
     SDL_Event event;
     while (SDL_PollEvent(&event))
