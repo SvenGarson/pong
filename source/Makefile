@@ -1,22 +1,32 @@
-IDIR =../include
+# Choose a compiler
 CC=gcc
+
+# Set include directory to look for project headers
+IDIR =../include
 CFLAGS=-I$(IDIR)
 
+# Directories for compilation unit objects and linked libraries
 ODIR=obj
 LDIR =../lib
 
-LIBS=-lSDL2
+# Linked libraries
+LIBS=-lSDL2 -lGL -lGLU
 
-_DEPS =
+# Header that source files depend on
+_DEPS = pong_bool.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
+# Compilation unit object files to build
 _OBJ = pong.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
+# Re-generate compilation unit object files when corresponding headers change
 $(ODIR)/%.o: %.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+# Targets
 compile: $(OBJ)
+	clear
 	$(CC) -o ../build/pong $^ $(CFLAGS) $(LIBS)
 
 run:
