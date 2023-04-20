@@ -74,8 +74,6 @@ void register_printable_glyph(int ascii_code, int texture_grid_x, int texture_gr
   p_info->texcoords_region.max.x = p_info->texcoords_region.min.x + texture_glyph_span_x;
   p_info->texcoords_region.max.y = p_info->texcoords_region.min.y + texture_glyph_span_y;
 
-  p_info->texcoords_region.min.y = 1.0f / 128.0f;
-  p_info->texcoords_region.max.y = 10.0f / 128.0f;
   p_info->is_printable = PONG_TRUE;
 }
 
@@ -107,6 +105,95 @@ void text_renderer_text_info(
     register_printable_glyph('G', 6, 0);
     register_printable_glyph('H', 7, 0);
     register_printable_glyph('I', 8, 0);
+    register_printable_glyph('J', 9, 0);
+    register_printable_glyph('K', 10, 0);
+    register_printable_glyph('L', 11, 0);
+    register_printable_glyph('M', 12, 0);
+    register_printable_glyph('N', 13, 0);
+    register_printable_glyph('O', 14, 0);
+    register_printable_glyph('P', 15, 0);
+    register_printable_glyph('Q', 16, 0);
+    register_printable_glyph('R', 17, 0);
+    register_printable_glyph('S', 18, 0);
+    register_printable_glyph('T', 19, 0);
+    register_printable_glyph('U', 20, 0);
+    register_printable_glyph('V', 0, 1);
+    register_printable_glyph('W', 1, 1);
+    register_printable_glyph('X', 2, 1);
+    register_printable_glyph('Y', 3, 1);
+    register_printable_glyph('Z', 4, 1);
+
+    register_printable_glyph('a', 5, 1);
+    register_printable_glyph('b', 6, 1);
+    register_printable_glyph('c', 7, 1);
+    register_printable_glyph('d', 8, 1);
+    register_printable_glyph('e', 9, 1);
+    register_printable_glyph('f', 10, 1);
+    register_printable_glyph('g', 11, 1);
+    register_printable_glyph('h', 12, 1);
+    register_printable_glyph('i', 13, 1);
+    register_printable_glyph('j', 14, 1);
+    register_printable_glyph('k', 15, 1);
+    register_printable_glyph('l', 16, 1);
+    register_printable_glyph('m', 17, 1);
+    register_printable_glyph('n', 18, 1);
+    register_printable_glyph('o', 19, 1);
+    register_printable_glyph('p', 20, 1);
+    register_printable_glyph('q', 0, 2);
+    register_printable_glyph('r', 1, 2);
+    register_printable_glyph('s', 2, 2);
+    register_printable_glyph('t', 3, 2);
+    register_printable_glyph('u', 4, 2);
+    register_printable_glyph('v', 5, 2);
+    register_printable_glyph('w', 6, 2);
+    register_printable_glyph('x', 7, 2);
+    register_printable_glyph('y', 8, 2);
+    register_printable_glyph('z', 9, 2);
+
+    register_printable_glyph('0', 10, 2);
+    register_printable_glyph('1', 11, 2);
+    register_printable_glyph('2', 12, 2);
+    register_printable_glyph('3', 13, 2);
+    register_printable_glyph('4', 14, 2);
+    register_printable_glyph('5', 15, 2);
+    register_printable_glyph('6', 16, 2);
+    register_printable_glyph('7', 17, 2);
+    register_printable_glyph('8', 18, 2);
+    register_printable_glyph('9', 19, 2);
+
+    register_printable_glyph('!', 0, 3);
+    register_printable_glyph('"', 1, 3);
+    register_printable_glyph('#', 2, 3);
+    register_printable_glyph('$', 3, 3);
+    register_printable_glyph('%', 4, 3);
+    register_printable_glyph('&', 5, 3);
+    register_printable_glyph('\'', 6, 3);
+    register_printable_glyph('(', 7, 3);
+    register_printable_glyph(')', 8, 3);
+    register_printable_glyph('*', 9, 3);
+    register_printable_glyph('+', 10, 3);
+    register_printable_glyph(',', 11, 3);
+    register_printable_glyph('-', 12, 3);
+    register_printable_glyph('.', 13, 3);
+    register_printable_glyph('/', 14, 3);
+    register_printable_glyph(':', 15, 3);
+    register_printable_glyph(';', 16, 3);
+    register_printable_glyph('<', 17, 3);
+    register_printable_glyph('=', 18, 3);
+    register_printable_glyph('>', 19, 3);
+    register_printable_glyph('?', 20, 3);
+
+    register_printable_glyph('@', 0, 4);
+    register_printable_glyph('[', 1, 4);
+    register_printable_glyph('\\', 2, 4);
+    register_printable_glyph(']', 3, 4);
+    register_printable_glyph('^', 4, 4);
+    register_printable_glyph('_', 5, 4);
+    register_printable_glyph('`', 6, 4);
+    register_printable_glyph('{', 7, 4);
+    register_printable_glyph('|', 8, 4);
+    register_printable_glyph('}', 9, 4);
+    register_printable_glyph('~', 10, 4);
 
 
     /* Initialization done */
@@ -119,9 +206,14 @@ void text_renderer_text_info(
   /* Reset the cache */
   p_cache->glyph_infos_generated = 0;
 
-  /* TODO-GS: Early out when no text or font-height too small */
+  /* Do nothing when no text given */
   if (p_text == NULL)
     return;
+
+  /* Determine font-size multiplier to keep glyphs rendered in the original ratio */
+  if (desired_font_height < GLYPH_HEIGHT_IN_PIXELS)
+    desired_font_height = GLYPH_HEIGHT_IN_PIXELS;
+  const int FONT_SCALE = desired_font_height / GLYPH_HEIGHT_IN_PIXELS;
 
   /* Generate text glyph info */
   struct vec2i glyph_cursor = { base_x, base_y };
@@ -137,20 +229,19 @@ void text_renderer_text_info(
 
     /* Discern between printing and control characters */
     const int SPACES_PER_TAB = 2;
-    const int FONT_HEIGHT_SCALE = 1;
-    const int SCALED_GLYPH_WIDTH = 5 * FONT_HEIGHT_SCALE;
-    const int SCALED_GLYPH_HEIGHT = 9 * FONT_HEIGHT_SCALE;
+    const int SCALED_GLYPH_WIDTH = 5 * FONT_SCALE;
+    const int SCALED_GLYPH_HEIGHT = 9 * FONT_SCALE;
     const char text_char = *p_text_char;
     if (text_char == '\n')
     {
       /* Next line */
-      glyph_cursor.y -= SCALED_GLYPH_HEIGHT + FONT_HEIGHT_SCALE;
+      glyph_cursor.y -= SCALED_GLYPH_HEIGHT + FONT_SCALE;
       glyph_cursor.x = base_x;
     }
     else if (text_char == ' ')
     {
       /* Skip char */
-      glyph_cursor.x += SCALED_GLYPH_WIDTH + FONT_HEIGHT_SCALE;
+      glyph_cursor.x += SCALED_GLYPH_WIDTH + FONT_SCALE;
     }
     else if (is_printable(text_char))
     {
@@ -167,7 +258,7 @@ void text_renderer_text_info(
       p_info->texcoords_region = ascii_glyph_info_store[text_char].texcoords_region;
 
       /* To next character */
-      glyph_cursor.x += SCALED_GLYPH_WIDTH + FONT_HEIGHT_SCALE;
+      glyph_cursor.x += SCALED_GLYPH_WIDTH + FONT_SCALE;
     }
     else {
       /* Non-printable and non-control character */

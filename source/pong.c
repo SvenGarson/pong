@@ -173,17 +173,6 @@ int main(void)
     glClear(GL_COLOR_BUFFER_BIT);
 
     /* Render scene */
-    /* Color triangle */
-    glDisable(GL_BLEND);
-    glDisable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBegin(GL_TRIANGLES);
-      glVertex2i(50, 50);
-      glVertex2i(800 - 50, 50);
-      glVertex2i(800 - 50, 600 - 50);
-    glEnd();
-
-    /* Font rendering */
     glColor3ub(255, 255, 255);
     glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
@@ -191,7 +180,7 @@ int main(void)
     glBindTexture(GL_TEXTURE_2D, text_glyph_texture_handle);
 
     struct text_renderer_cache cache;
-    text_renderer_text_info("ABCD EFGHI\nFGH\nA\tB\tC", 0, 600, 9 * 5, &cache);  
+    text_renderer_text_info("ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!\"#$%&'()*+,-./:;<=>?\n@[\\]^_`{|}~", 0, 600, 36, &cache);  
 
     glColor3ub(255, 0, 0);
     glBegin(GL_QUADS);
