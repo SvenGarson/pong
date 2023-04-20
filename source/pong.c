@@ -94,6 +94,27 @@ int main(void)
     return -1;
   }
 
+  /*
+      TODO-GS: Implement simple batcher for the following:
+        - Text rendering with options: text; font height; position
+        - General quad rendering
+
+      Requirements:
+        - Render as triangles
+        - Specify color for every shape
+
+      Usage
+        - batch_text(text, x, y, height,)
+        - batch_quad(from, to)
+
+      Batch
+        - set color
+        - set texture
+
+      Rendering
+        - Iterate batches
+  */
+
   /* Gameloop timing */
   uint64_t fps_counter_last = SDL_GetPerformanceCounter();
   int frames_per_second = 0;

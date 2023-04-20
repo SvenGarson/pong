@@ -60,11 +60,11 @@ void register_printable_glyph(int ascii_code, int texture_grid_x, int texture_gr
   /* Determine the glyph texcoords based on the texture grid region */
   /* TODO-GS: Compute from the actual texture dimensions */
   struct ascii_glyph_info * const p_info = ascii_glyph_info_store + ascii_code;
-  const float texture_glyph_span_x = 5.0f / 128.0f;
-  const float texture_glyph_span_y = 9.0f / 128.0f;
+  const float texture_glyph_span_x = (float)GLYPH_WIDTH_IN_PIXELS / (float)p_glyph_texture->w;
+  const float texture_glyph_span_y = (float)GLYPH_HEIGHT_IN_PIXELS / (float)p_glyph_texture->h;
 
-  p_info->texcoords_region.min.x = ((texture_grid_x * (GLYPH_WIDTH_IN_PIXELS + 1)) + 1) / 128.0f;
-  p_info->texcoords_region.min.y = ((texture_grid_y * (GLYPH_HEIGHT_IN_PIXELS + 1)) + 1) / 128.0f;
+  p_info->texcoords_region.min.x = ((texture_grid_x * (GLYPH_WIDTH_IN_PIXELS + 1)) + 1) / (float)p_glyph_texture->w;
+  p_info->texcoords_region.min.y = ((texture_grid_y * (GLYPH_HEIGHT_IN_PIXELS + 1)) + 1) / (float)p_glyph_texture->h;
   p_info->texcoords_region.max.x = p_info->texcoords_region.min.x + texture_glyph_span_x;
   p_info->texcoords_region.max.y = p_info->texcoords_region.min.y + texture_glyph_span_y;
 
@@ -243,8 +243,8 @@ void text_renderer_text_info(
 
     /* Discern between printing and control characters */
     const int SPACES_PER_TAB = 2;
-    const int SCALED_GLYPH_WIDTH = 5 * FONT_SCALE;
-    const int SCALED_GLYPH_HEIGHT = 9 * FONT_SCALE;
+    const int SCALED_GLYPH_WIDTH = GLYPH_WIDTH_IN_PIXELS * FONT_SCALE;
+    const int SCALED_GLYPH_HEIGHT = GLYPH_HEIGHT_IN_PIXELS * FONT_SCALE;
     const char text_char = *p_text_char;
     if (text_char == '\n')
     {
