@@ -13,7 +13,7 @@ LDIR =../lib
 LIBS=-lSDL2 -lGL -lGLU -lSDL2_image
 
 # Header that source files depend on
-_DEPS = pong_bool.h text_renderer.h
+_DEPS = pong_bool.h text_renderer.h texture_loader.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 # Compilation unit object files to build

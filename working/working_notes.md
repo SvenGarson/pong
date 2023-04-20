@@ -79,6 +79,8 @@ This document contains working notes throughout the completion of the project
 - Documentation
 
 ## Things to do for the next clean project
+- cleanup resources on error and clean exits alike even though the OS 
+  deallocates everything on the process stops
 - use a linter everywhere (also checking indentation)
 - specify a specific C standard to use before starting development
 - decouple rendering (using sync or not) from the updates
