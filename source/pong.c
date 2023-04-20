@@ -7,6 +7,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <GL/glu.h>
+#include <batcher.h>
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
@@ -183,37 +184,18 @@ int main(void)
       }
     }
 
+    /* Render stuff */
+    batcher_color(255, 0, 0, 255);
+    batcher_quadf(0, 0, 250, 125);
+
+    batcher_color(0, 255, 0, 255);
+    batcher_text("Hello 0x1234", 50, 250, 27);
+
     /* Clear scene */
     glClear(GL_COLOR_BUFFER_BIT);
 
-    /* Render scene */
-    glColor3ub(255, 255, 255);
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
-    glBindTexture(GL_TEXTURE_2D, text_renderer_texture_handle);
-
-    struct text_renderer_cache cache;
-    text_renderer_text_info(SDL_GetWindowTitle(p_window), 0, 300, 27, &cache);  
-
-    glColor3ub(255, 0, 0);
-    glBegin(GL_QUADS);
-    for (int i = 0; i < cache.glyph_infos_generated; i++)
-    {
-      const struct text_renderer_glyph_info * p_info = cache.glyph_infos + i;
-      glTexCoord2f(p_info->texcoords_region.min.x, p_info->texcoords_region.max.y);
-      glVertex2f(p_info->render_region.min.x, p_info->render_region.min.y);
-
-      glTexCoord2f(p_info->texcoords_region.max.x, p_info->texcoords_region.max.y);
-      glVertex2f(p_info->render_region.max.x, p_info->render_region.min.y);
-
-      glTexCoord2f(p_info->texcoords_region.max.x, p_info->texcoords_region.min.y);
-      glVertex2f(p_info->render_region.max.x, p_info->render_region.max.y);
-
-      glTexCoord2f(p_info->texcoords_region.min.x, p_info->texcoords_region.min.y);
-      glVertex2f(p_info->render_region.min.x, p_info->render_region.max.y);
-    }
-    glEnd();
+    /* Render batches */
+    batcher_render();
 
     /* Swap buffers */
     SDL_GL_SwapWindow(p_window);

@@ -23,7 +23,7 @@ pong_bool_te texture_loader_initialize(void)
   return PONG_TRUE;
 }
 
-const SDL_Surface * texture_loader_load_texture
+SDL_Surface * texture_loader_load_texture
 (
   const char * p_texture_name_with_extension
 )

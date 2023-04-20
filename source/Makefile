@@ -12,7 +12,7 @@ LDIR =../lib
 # Linked libraries
 LIBS=-lSDL2 -lGL -lGLU -lSDL2_image
 
-# Header that source files depend on
+# Header that source files depend on TODO-GS: Add all dependencies
 _DEPS = pong_bool.h text_renderer.h texture_loader.h batcher.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 

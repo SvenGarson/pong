@@ -36,7 +36,7 @@ static struct ascii_glyph_info {
 /* Private state */
 static pong_bool_te text_renderer_initialized = PONG_FALSE;
 static struct ascii_glyph_info ascii_glyph_info_store[ASCII_CODE_RANGE_CEILING];
-static const SDL_Surface * p_glyph_texture = NULL;
+static SDL_Surface * p_glyph_texture = NULL;
 
 /* Private helper functions */
 pong_bool_te is_valid_ascii_code(int ascii_code)
