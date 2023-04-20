@@ -191,16 +191,13 @@ int main(void)
     glBindTexture(GL_TEXTURE_2D, text_glyph_texture_handle);
 
     struct text_renderer_cache cache;
-    text_renderer_text_info("ABCDEFGHI\nFGH", 5, 9, 9 * 5, &cache);  
+    text_renderer_text_info("ABCD EFGHI\nFGH\nA\tB\tC", 0, 600, 9 * 5, &cache);  
 
+    glColor3ub(255, 0, 0);
     glBegin(GL_QUADS);
     for (int i = 0; i < cache.glyph_infos_generated; i++)
     {
       const struct text_renderer_glyph_info * p_info = cache.glyph_infos + i;
-      /*
-      printf("\n\tRender from [%5d, %5d] to [%5d, %5d]", p_info->render_region.min.x, p_info->render_region.min.y, p_info->render_region.max.x, p_info->render_region.max.y);
-      printf("\n\tTexcrd from [%f, %f] to [%f, %f]", p_info->texcoords_region.min.x, p_info->texcoords_region.min.y, p_info->texcoords_region.max.x, p_info->texcoords_region.max.y);
-      */
       glTexCoord2f(p_info->texcoords_region.min.x, p_info->texcoords_region.max.y);
       glVertex2i(p_info->render_region.min.x, p_info->render_region.min.y);
 

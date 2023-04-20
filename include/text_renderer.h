@@ -152,11 +152,6 @@ void text_renderer_text_info(
       /* Skip char */
       glyph_cursor.x += SCALED_GLYPH_WIDTH + FONT_HEIGHT_SCALE;
     }
-    else if (text_char == '\t')
-    {
-      /* Skip x chars per tab */
-      glyph_cursor.x += (SCALED_GLYPH_WIDTH + FONT_HEIGHT_SCALE) * SPACES_PER_TAB;
-    }
     else if (is_printable(text_char))
     {
       /* Generate textured quad rendering info */
