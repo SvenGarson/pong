@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <pong_bool.h>
 #include <stdint.h>
-#include <text_renderer.h>
 
 /* SDL and OpenGL related includes */
 #include <SDL2/SDL.h>
@@ -88,56 +87,16 @@ int main(void)
     return -1;
   }
 
-  /* Initialize the text renderer */
-  if (text_renderer_initialize() == PONG_FALSE)
+  /* Initialize batch renderer */
+  if (batcher_initialize() == PONG_FALSE)
   {
-    fprintf(stderr, "\n[Text renderer] Could not initialize the text renderer");
+    fprintf(stderr, "\n[Pong] Could not initialize the batch renderer");
     return -1;
   }
-
-  /*
-      TODO-GS: Implement simple batcher for the following:
-        - Text rendering with options: text; font height; position
-        - General quad rendering
-
-      Requirements:
-        - Render as triangles
-        - Specify color for every shape
-
-      Usage
-        - batch_text(text, x, y, height,)
-        - batch_quad(from, to)
-
-      Batch
-        - set color
-        - set texture
-
-      Rendering
-        - Iterate batches
-  */
 
   /* Gameloop timing */
   uint64_t fps_counter_last = SDL_GetPerformanceCounter();
   int frames_per_second = 0;
-
-  /* Construct OpenGL texture for font rendering */
-  /* Solution: https://stackoverflow.com/questions/25771735/creating-opengl-texture-from-sdl2-surface-strange-pixel-values */
-  const SDL_Surface * p_glyph_texture = text_renderer_texture_info();
-  GLuint text_renderer_texture_handle;
-  glGenTextures(1, &text_renderer_texture_handle);
-  glBindTexture(GL_TEXTURE_2D, text_renderer_texture_handle);
-  glTexImage2D(
-    GL_TEXTURE_2D,
-    0,
-    GL_RGBA,
-    p_glyph_texture->w, p_glyph_texture->h,
-    0,
-    GL_RGBA,
-    GL_UNSIGNED_BYTE,
-    p_glyph_texture->pixels
-  );
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   /* Gameloop */
   pong_bool_te window_close_requested = PONG_FALSE;
@@ -184,12 +143,12 @@ int main(void)
       }
     }
 
-    /* Render stuff */
-    batcher_color(255, 0, 0, 255);
-    batcher_quadf(0, 0, 250, 125);
+    /* Batch */
+    batcher_color(50, 150, 250, 255);
+    batcher_quadf(250, 250, 500, 500);
 
-    batcher_color(0, 255, 0, 255);
-    batcher_text("Hello 0x1234", 50, 250, 27);
+    batcher_color(255, 255, 255, 255);
+    batcher_text("The story of my life", 250 + 5, 500 - 5, 18);
 
     /* Clear scene */
     glClear(GL_COLOR_BUFFER_BIT);
@@ -202,7 +161,7 @@ int main(void)
   }
 
   /* Cleanup */
-  text_renderer_text_cleanup();
+  batcher_cleanup();
   SDL_DestroyWindow(p_window);
   SDL_Quit();
 

@@ -73,10 +73,12 @@ This document contains working notes throughout the completion of the project
 - Implement testing and development build flags - Through executable arguments?
 
 ## Finalizing
+- Fix the sync issue
 - Implement debugging/dev switch
 - Handle all Todo's
 - Working and other un-necessary directories are removed
 - Documentation
+- Add all dependency reference in Makefile; source and headers
 
 ## Things to do for the next clean project
 - cleanup resources on error and clean exits alike even though the OS 

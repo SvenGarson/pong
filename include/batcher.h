@@ -5,6 +5,8 @@
 #include <vec2f.h>
 #include <SDL2/SDL_opengl.h>
 #include <color4ub.h>
+#include <text_renderer.h>
+#include <pong_bool.h>
 
 /* Defines */
 #define BATCHER_MAX_TRIANGLES (1024)
@@ -34,6 +36,7 @@ GLuint current_texture_handle = 0x00;
 struct vec2f current_texcoords_v0 = { 0.0f, 0.0f };
 struct vec2f current_texcoords_v1 = { 0.0f, 0.0f };
 struct vec2f current_texcoords_v2 = { 0.0f, 0.0f };
+GLuint text_glyph_texture_handle = 0x00;
 
 /* Private batcher helpers */
 void batcher_color(
@@ -101,6 +104,40 @@ void batcher_triangle
 }
 
 /* Batcher function definitions */
+pong_bool_te batcher_initialize(void)
+{
+  /* Initialize text renderer as requirement for batched rendering */
+  if (text_renderer_initialize() == PONG_FALSE)
+    return PONG_FALSE;
+
+  /* Construct OpenGL texture for font rendering */
+  /* Solution: https://stackoverflow.com/questions/25771735/creating-opengl-texture-from-sdl2-surface-strange-pixel-values */
+  const SDL_Surface * p_glyph_texture = text_renderer_texture_info();
+  glGenTextures(1, &text_glyph_texture_handle);
+  glBindTexture(GL_TEXTURE_2D, text_glyph_texture_handle);
+  glTexImage2D(
+    GL_TEXTURE_2D,
+    0,
+    GL_RGBA,
+    p_glyph_texture->w,
+    p_glyph_texture->h,
+    0,
+    GL_RGBA,
+    GL_UNSIGNED_BYTE,
+    p_glyph_texture->pixels
+  );
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  /* Success */
+  return PONG_TRUE;
+}
+
+void batcher_cleanup(void)
+{
+  text_renderer_text_cleanup();
+}
+
 void batcher_text
 (
   const char * p_text,
@@ -109,13 +146,51 @@ void batcher_text
   int font_height
 )
 {
-  /* TODO-GS: Render text and get info and texure handle from there */
-  batcher_texture_handle(1);
-  batcher_texture_coords(0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 0.0f);
-  batcher_triangle(base_x, base_y, base_x + 256, base_y, base_x + 256, base_y + 256);
+  /* Determine text rendering information to batch */
+  static struct text_renderer_cache text_info;
+  text_renderer_text_info(p_text, base_x, base_y, font_height, &text_info);
 
-  batcher_texture_coords(0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f);
-  batcher_triangle(base_x, base_y, base_x + 256, base_y + 256, base_x, base_y + 256);
+  batcher_texture_handle(1); /* TODO-GS: Get actual texture */
+  for (int glyph_index = 0; glyph_index < text_info.glyph_infos_generated; glyph_index++)
+  {
+    const struct text_renderer_glyph_info * p_info = text_info.glyph_infos + glyph_index;
+
+    /* Lower-right glyph triangle */
+    batcher_texture_coords(
+      p_info->texcoords_region.min.x,
+      p_info->texcoords_region.max.y,
+      p_info->texcoords_region.max.x,
+      p_info->texcoords_region.max.y,
+      p_info->texcoords_region.max.x,
+      p_info->texcoords_region.min.y
+    );
+    batcher_triangle(
+      p_info->render_region.min.x,
+      p_info->render_region.min.y,
+      p_info->render_region.max.x,
+      p_info->render_region.min.y,
+      p_info->render_region.max.x,
+      p_info->render_region.max.y
+    );
+
+    /* Upper-left glyph triangle */
+    batcher_texture_coords(
+      p_info->texcoords_region.min.x,
+      p_info->texcoords_region.max.y,
+      p_info->texcoords_region.max.x,
+      p_info->texcoords_region.min.y,
+      p_info->texcoords_region.min.x,
+      p_info->texcoords_region.min.y
+    );
+    batcher_triangle(
+      p_info->render_region.min.x,
+      p_info->render_region.min.y,
+      p_info->render_region.max.x,
+      p_info->render_region.max.y,
+      p_info->render_region.min.x,
+      p_info->render_region.max.y
+    );
+  }
 }
 
 void batcher_quadf
@@ -142,7 +217,8 @@ void batcher_render(void)
     if (p_triangle->texture_handle == 0x00)
     {
       /* No Texture */
-      glDisable(GL_BLEND);
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
       glDisable(GL_TEXTURE_2D);
       glColor4ub(p_triangle->color.red, p_triangle->color.green, p_triangle->color.blue, p_triangle->color.alpha);
 
