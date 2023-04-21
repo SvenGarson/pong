@@ -279,8 +279,11 @@ void batcher_render(void)
     glVertex2f(p_triangle->v2.x, p_triangle->v2.y);
   }
 
-  /* Clase last batch */
-  glEnd();
+  /* Clase last batch if any batch was opened */
+  if (batched_triangles > 0)
+  {
+    glEnd();
+  }
 
   /* Clear the buffer */
   batched_triangles = 0;
