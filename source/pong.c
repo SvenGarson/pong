@@ -16,6 +16,22 @@ const char * WINDOW_TITLE = "Pong";
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
 
+/* Helper functions */
+void log_opengl_error(void)
+{
+  GLenum gl_error = glGetError();
+  if (gl_error == GL_NO_ERROR) return;
+
+  printf("\n\nOpenGL errors:");
+  int error_index = 1;
+  while (gl_error != GL_NO_ERROR)
+  {
+    printf("\n\t[%-3d] %s", error_index++, gluErrorString(gl_error));
+    gl_error = glGetError();
+  }
+}
+
+/* Pong entry point */
 int main(void)
 {
   /* Rendering window and surface contained by that window */
@@ -144,17 +160,17 @@ int main(void)
     }
 
     /* Batch */
-    batcher_color(50, 150, 250, 255);
-    batcher_quadf(250, 250, 500, 500);
-
     batcher_color(255, 255, 255, 255);
-    batcher_text("The story of my life", 250 + 5, 500 - 5, 18);
+    batcher_text("Doing stuff ...", 10, 600 - 10, 27);
 
     /* Clear scene */
     glClear(GL_COLOR_BUFFER_BIT);
 
     /* Render batches */
     batcher_render();
+
+    /* Check OpenGL errors */
+    log_opengl_error();
 
     /* Swap buffers */
     SDL_GL_SwapWindow(p_window);

@@ -208,47 +208,79 @@ void batcher_quadf
 
 void batcher_render(void)
 {
+  /* Batcher OpenGL settings */
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
+
+  /* Batch configuration changes between textured and non-texured primitives */
+  GLuint last_texture_handle = 0x00;
+
   /* Render added batches in the order added */
   for (int triangle_index = 0; triangle_index < batched_triangles; triangle_index++)
   {
     const struct batcher_triangle * p_triangle = triangles + triangle_index;
+    pong_bool_te is_textured = p_triangle->texture_handle ? PONG_TRUE : PONG_FALSE;
 
-    /* Texture VS non-textured primitive */
-    if (p_triangle->texture_handle == 0x00)
+    /* End and begin batches on texture unit changes */
+    if (triangle_index == 0)
     {
-      /* No Texture */
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
-      glDisable(GL_TEXTURE_2D);
-      glColor4ub(p_triangle->color.red, p_triangle->color.green, p_triangle->color.blue, p_triangle->color.alpha);
+      /* First batch configured to the first triangle*/
+      if (is_textured)
+      {
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, p_triangle->texture_handle);
+      }
+      else
+      {
+        glDisable(GL_TEXTURE_2D);
+      }
 
+      /* Begin the first batch */
+      last_texture_handle = p_triangle->texture_handle;
+      glColor4ub(p_triangle->color.red, p_triangle->color.green, p_triangle->color.blue, p_triangle->color.alpha);
       glBegin(GL_TRIANGLES);
-        glVertex2f(p_triangle->v0.x, p_triangle->v0.y);
-        glVertex2f(p_triangle->v1.x, p_triangle->v1.y);
-        glVertex2f(p_triangle->v2.x, p_triangle->v2.y);
-      glEnd();
     }
     else
     {
-      /* Texture */
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); 
-      glEnable(GL_TEXTURE_2D);
-      glBindTexture(GL_TEXTURE_2D, p_triangle->texture_handle);
+      /* Successive batch when texture unit has changed */
+      const GLuint new_texture_handle = p_triangle->texture_handle;
+      if (new_texture_handle != last_texture_handle)
+      {
+        /* Close current batch */
+        glEnd();
 
-      glColor4ub(p_triangle->color.red, p_triangle->color.green, p_triangle->color.blue, p_triangle->color.alpha);
-      glBegin(GL_TRIANGLES);
-        glTexCoord2f(p_triangle->tcv0.x, p_triangle->tcv0.y);
-        glVertex2f(p_triangle->v0.x, p_triangle->v0.y);
+        /* Configure the next batch */
+        if (is_textured)
+        {
+          glEnable(GL_TEXTURE_2D);
+          glBindTexture(GL_TEXTURE_2D, p_triangle->texture_handle);
+        }
+        else
+        {
+          glDisable(GL_TEXTURE_2D);
+        }
 
-        glTexCoord2f(p_triangle->tcv1.x, p_triangle->tcv1.y);
-        glVertex2f(p_triangle->v1.x, p_triangle->v1.y);
 
-        glTexCoord2f(p_triangle->tcv2.x, p_triangle->tcv2.y);
-        glVertex2f(p_triangle->v2.x, p_triangle->v2.y);
-      glEnd();
+        /* Begin the next batch */
+        last_texture_handle = p_triangle->texture_handle;
+        glColor4ub(p_triangle->color.red, p_triangle->color.green, p_triangle->color.blue, p_triangle->color.alpha);
+        glBegin(GL_TRIANGLES);
+      }
     }
+
+    /* Render data with batch setting */
+    glTexCoord2f(p_triangle->tcv0.x, p_triangle->tcv0.y);
+    glVertex2f(p_triangle->v0.x, p_triangle->v0.y);
+
+    glTexCoord2f(p_triangle->tcv1.x, p_triangle->tcv1.y);
+    glVertex2f(p_triangle->v1.x, p_triangle->v1.y);
+
+    glTexCoord2f(p_triangle->tcv2.x, p_triangle->tcv2.y);
+    glVertex2f(p_triangle->v2.x, p_triangle->v2.y);
   }
+
+  /* Clase last batch */
+  glEnd();
 
   /* Clear the buffer */
   batched_triangles = 0;
