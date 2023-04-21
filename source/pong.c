@@ -6,6 +6,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
 #include <GL/glu.h>
+#include <vec2i.h>
 #include <batcher.h>
 
 /* Defines */
@@ -29,6 +30,11 @@ void log_opengl_error(void)
     printf("\n\t[%-3d] %s", error_index++, gluErrorString(gl_error));
     gl_error = glGetError();
   }
+}
+
+double time_in_seconds(void)
+{
+  return (double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency();
 }
 
 /* Pong entry point */
@@ -114,10 +120,39 @@ int main(void)
   uint64_t fps_counter_last = SDL_GetPerformanceCounter();
   int frames_per_second = 0;
 
+  /* Pong game variables */
+  /* Input */
+  pong_bool_te paddle_left_up_pressed = PONG_FALSE;
+  pong_bool_te paddle_left_down_pressed = PONG_FALSE;
+
+  /* Integration */
+  double last_time_in_seconds = time_in_seconds();
+  const float PADDLE_PIXELS_PER_SECOND = 500.0f;
+  const float BALL_PIXELS_PER_SECOND = 50.0f;
+
+  /* Positioning and sizing */
+  const int PADDLE_INSET = 50;
+  const struct vec2i PADDLE_DIMENSIONS = { 20, 50 };
+  struct vec2f paddle_left_pos = { PADDLE_INSET, WINDOW_HEIGHT / 2 };
+  struct vec2f paddle_right_pos = { WINDOW_WIDTH - PADDLE_INSET - PADDLE_DIMENSIONS.x, WINDOW_HEIGHT / 2 };
+  const int BALL_SIZE = 15;
+  const struct vec2f BALL_SPAWN_POS = { (WINDOW_WIDTH / 2.0f) - (BALL_SIZE / 2.0f), (WINDOW_HEIGHT / 2.0f) - (BALL_SIZE / 2.0f) };
+  struct vec2f ball_pos = BALL_SPAWN_POS;
+  struct vec2f ball_velocity = { BALL_PIXELS_PER_SECOND, BALL_PIXELS_PER_SECOND };
+
+  /* Scoring */
+  int score_left = 0;
+  int score_right = 0;
+
   /* Gameloop */
   pong_bool_te window_close_requested = PONG_FALSE;
   while(window_close_requested == PONG_FALSE)
   {
+    /* Integration */
+    const double new_time_in_seconds = time_in_seconds();
+    const double delta_time_in_seconds = new_time_in_seconds - last_time_in_seconds;
+    last_time_in_seconds = new_time_in_seconds;
+
     /* FPS counter */
     frames_per_second++;
     const uint64_t fps_counter_new = SDL_GetPerformanceCounter();
@@ -141,7 +176,7 @@ int main(void)
       frames_per_second = 0;
     }
 
-    /* Poll events */
+    /* Poll events into required key states */
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
@@ -151,17 +186,107 @@ int main(void)
           window_close_requested = PONG_TRUE;
           break;
         case SDL_KEYDOWN:
-          if (event.key.keysym.sym == SDLK_ESCAPE)
-            window_close_requested = PONG_TRUE;
+          /* Process key presses */
+          switch(event.key.keysym.sym)
+          {
+            case SDLK_ESCAPE:
+              window_close_requested = PONG_TRUE;
+              break;
+            case SDLK_LSHIFT:
+              paddle_left_up_pressed = PONG_TRUE;
+              break;
+            case SDLK_LCTRL:
+              paddle_left_down_pressed = PONG_TRUE;
+              break;
+          }
+          break;
+        case SDL_KEYUP:
+          /* Process key releases */
+          switch(event.key.keysym.sym)
+          {
+            case SDLK_LSHIFT:
+              paddle_left_up_pressed = PONG_FALSE;
+              break;
+            case SDLK_LCTRL:
+              paddle_left_down_pressed = PONG_FALSE;
+              break;
+          }
           break;
         default:
           break;
       }
     }
 
-    /* Batch */
+    /* Pong logic */
+    /* Controlling paddles */
+    if (paddle_left_up_pressed)
+    {
+      paddle_left_pos.y += PADDLE_PIXELS_PER_SECOND * delta_time_in_seconds;
+    }
+    if (paddle_left_down_pressed)
+    {
+      paddle_left_pos.y -= PADDLE_PIXELS_PER_SECOND * delta_time_in_seconds;
+    }
+    if (paddle_left_pos.y + PADDLE_DIMENSIONS.y >= WINDOW_HEIGHT)
+      paddle_left_pos.y = WINDOW_HEIGHT - PADDLE_DIMENSIONS.y;
+    if (paddle_left_pos.y <= 0.0f)
+      paddle_left_pos.y = 0.0f;
+
+    /* Integrating the ball - TODO-GS: Make this continuous */
+    /* Collision detection */
+    /*
+        - Continuous check against edges (vertical and horizontal) by TOI
+        - Set position to surface and deflect + scale the velocity to the rest?
+        - Keep integrating until the velocity fully consumed for the integration step
+
+        Q & A
+          - How to react to two exact collisions on both axis?
+            Handle both if TOI very close together!? Is that every relevant?
+    */
+    /* Continuous collision detection and deflection */
+    const struct region2Df BALL_REGION = { { ball_pos.x, ball_pos.y }, { ball_pos.x + BALL_SIZE, ball_pos.y + BALL_SIZE }};
+    /* Vertical playfield bounds */
+    const float TOI_PLAYFIELD_TOP = (WINDOW_HEIGHT - BALL_REGION.max.y) / ball_velocity.y;
+    
+    /* Velocity */
+    ball_pos.x += ball_velocity.x * delta_time_in_seconds;
+    ball_pos.y += ball_velocity.y * delta_time_in_seconds;
+    /* Reset and scoring */
+    if ((ball_pos.x + BALL_SIZE) < 0.0f)
+    {
+      /* Right player scores - Left player turn */
+      score_right++;
+      ball_pos = BALL_SPAWN_POS;
+      ball_velocity = (struct vec2f){ BALL_PIXELS_PER_SECOND, BALL_PIXELS_PER_SECOND };
+    }
+    if (ball_pos.x >= WINDOW_WIDTH)
+    {
+      /* Left player scores - Right player turn */
+      score_left++;
+      ball_pos = BALL_SPAWN_POS;
+      ball_velocity = (struct vec2f){ -BALL_PIXELS_PER_SECOND, BALL_PIXELS_PER_SECOND };
+    }
+
+    /* Batch scene data */
+    /* Left paddle */
     batcher_color(255, 255, 255, 255);
-    batcher_text("Doing stuff ...", 10, 600 - 10, 27);
+    batcher_quadf(paddle_left_pos.x, paddle_left_pos.y, paddle_left_pos.x + PADDLE_DIMENSIONS.x, paddle_left_pos.y + PADDLE_DIMENSIONS.y);
+
+    /* Right paddle */
+    batcher_color(255, 255, 255, 255);
+    batcher_quadf(paddle_right_pos.x, paddle_right_pos.y, paddle_right_pos.x + PADDLE_DIMENSIONS.x, paddle_right_pos.y + PADDLE_DIMENSIONS.y);
+
+    /* Ball */
+    batcher_color(255, 255, 255, 255);
+    batcher_quadf(BALL_REGION.min.x, BALL_REGION.min.y, BALL_REGION.max.x, BALL_REGION.max.y);
+
+    /* Left score */
+    batcher_color(255, 255, 255, 255);
+    char score_text[16];
+    snprintf(score_text, 16, "%2d", score_left);
+    batcher_text(score_text, WINDOW_WIDTH * 0.25, WINDOW_HEIGHT * 0.95, 9 * 8);
+    snprintf(score_text, 16, "%2d", score_right);
+    batcher_text(score_text, WINDOW_WIDTH * 0.55, WINDOW_HEIGHT * 0.95, 9 * 8);
 
     /* Clear scene */
     glClear(GL_COLOR_BUFFER_BIT);

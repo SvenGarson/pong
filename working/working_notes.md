@@ -8,7 +8,7 @@ This document contains working notes throughout the completion of the project
     - Computer VS Computer
     - Player VS Player
   + Movement
-    - Capped vertical movement
+    - [OK] Capped vertical movement
 - Ball
   + Spawns in center of the playfield
   + Initial velocity towards the player that lost the last round
@@ -28,6 +28,8 @@ This document contains working notes throughout the completion of the project
 - Scoring
   + Score displayed per player
   + Increment score when ball over opponents region
+  + Reset to center position and move toward the player that scored last
+  + Choose a random direction in some range but with the same, constant speed
 - Menu
   + Main menu
     + Play (Mode choice)
@@ -73,6 +75,7 @@ This document contains working notes throughout the completion of the project
 - Implement testing and development build flags - Through executable arguments?
 
 ## Finalizing
+- Fixed aspect ratio i.e. virtual sized rendering
 - Fix the sync issue
 - Implement debugging/dev switch
 - Handle all Todo's
