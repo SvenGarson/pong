@@ -10,16 +10,16 @@ This document contains working notes throughout the completion of the project
   + Movement
     - [OK] Capped vertical movement
 - Ball
-  + Spawns in center of the playfield
-  + Initial velocity towards the player that lost the last round
+  + [OK] Spawns in center of the playfield
+  + [OK] Initial velocity towards the player that lost the last round
     but first time a random direction?
   + Bouncing
-    - Bounces of the top and bottom playfield region
+    - [OK] Bounces of the top and bottom playfield region
     - Bounces of the paddle where the angle maybe depends on the contact angle
 - Playfield
-  + Vertical divider in the middle of the play field
+  + [OK] Vertical divider in the middle of the play field
 - Round
-  + Counter over the player regions
+  + [OK] Counter over the player regions
 - Audio
   + Menu interaction SFX
   + Optionl music SFC
@@ -48,6 +48,10 @@ This document contains working notes throughout the completion of the project
   + Sounds and volume
   + Overlay song
   + Variables: Padde position; ranges of motion; velocities
+  + Dev mode with variable sliders etc.
+- Sound effects
+  + Everywhere
+- Juice
 - Input
   + Keyboard input
   + No mouse input for menu and gameplay

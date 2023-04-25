@@ -14,6 +14,7 @@
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
+#define SCORE_TEXT_MAX_LENGTH (16)
 
 /* Datatypes */
 struct ball {
@@ -329,6 +330,10 @@ int main(void)
   int frames_per_second = 0;
 
   /* Pong game variables */
+  /* Scoring */
+  int score_paddle_left = 0;
+  int score_paddle_right = 0;
+
   /* Input */
   pong_bool_te paddle_left_up_pressed = PONG_FALSE;
   pong_bool_te paddle_left_down_pressed = PONG_FALSE;
@@ -558,7 +563,7 @@ int main(void)
         {
           /* No collision - Fully integrate the ball velocity */
           ball.position.x += ball.velocity.x * dts;
-          ball.position.y += ball.velocity.y * dts;  
+          ball.position.y += ball.velocity.y * dts;
 
           /* Reset velocity magnitude */
           ball.velocity = vec2f_normalize(ball.velocity);
@@ -595,6 +600,7 @@ int main(void)
           /* Deflect the velocity when the paddle was hit or the collider has no paddle associated */
           if (!paddle_missed_ball)
           {
+            /* TODO-GS: Compute direction based on where the ball hit the paddle */
             ball.velocity.x = ball.velocity.x + (2.0f * fabs(ball.velocity.x) * p_earliest_collider->surface_normal.x);
             ball.velocity.y = ball.velocity.y + (2.0f * fabs(ball.velocity.y) * p_earliest_collider->surface_normal.y);
           }
@@ -605,10 +611,49 @@ int main(void)
         }
       }
 
+    /* Ball respawning and scoring - TODO-GS: Random spawn direction and vertical position */
+    const struct region2Df region_ball_integrated = region_for_ball(&ball);
+    if (region_ball_integrated.min.x > WINDOW_WIDTH)
+    {
+      /* Left paddle scored - Right player is up next */
+      score_paddle_left++;
+      ball.position = PLAYFIELD_CENTER;
+      ball.velocity.x = -BALL_SPEED_PIXELS_PER_SECOND;
+      ball.velocity.y = 0;
+    }
+    if (region_ball_integrated.max.x < 0)
+    {
+      /* Right paddle scored */
+      score_paddle_right++;
+      ball.position = PLAYFIELD_CENTER;
+      ball.velocity.x = BALL_SPEED_PIXELS_PER_SECOND;
+      ball.velocity.y = 0;
+    }
+
     /* Clear scene */
     glClear(GL_COLOR_BUFFER_BIT);
 
     /* Render scene */
+      /* Playfield divider */
+      const int FIELD_DIV_LENGTH = WINDOW_HEIGHT / 20;
+      const int FIELD_DIV_COUNT = 12;
+      const int FIELD_DIV_SPACE_COUNT = FIELD_DIV_COUNT - 1;
+      const int FIELD_DIV_SPACE_LENGTH = (WINDOW_HEIGHT - (FIELD_DIV_COUNT * FIELD_DIV_LENGTH)) / FIELD_DIV_SPACE_COUNT;
+      const int FIELD_DIV_THICKNESS = 4;
+      const struct range2f FIELD_RANGE_HORI = {
+        (WINDOW_WIDTH * 0.5f) - (FIELD_DIV_THICKNESS * 0.5f),
+        (WINDOW_WIDTH * 0.5f) + (FIELD_DIV_THICKNESS * 0.5f)
+      };
+      for(int div_index = 0; div_index < FIELD_DIV_COUNT; div_index++)
+      {
+        const float DIV_BASE_HEIGHT = div_index * (FIELD_DIV_LENGTH + FIELD_DIV_SPACE_LENGTH);
+        batcher_color(255, 255, 255, 50);
+        batcher_quadf(
+          FIELD_RANGE_HORI.min, DIV_BASE_HEIGHT,
+          FIELD_RANGE_HORI.max, DIV_BASE_HEIGHT + FIELD_DIV_LENGTH
+        );  
+      }
+
       /* Paddles */
       batcher_color(255, 0, 0, 255);
       batcher_quadf(
@@ -629,6 +674,14 @@ int main(void)
         ball.position.x + ball.diameter * 0.5f,
         ball.position.y + ball.diameter * 0.5f
       );
+
+      /* Scores */
+      batcher_color(50, 150, 250, 255);
+      const char score_text[SCORE_TEXT_MAX_LENGTH];
+      snprintf(score_text, SCORE_TEXT_MAX_LENGTH, "%d", score_paddle_left);
+      batcher_text(score_text, WINDOW_WIDTH * 0.2f, WINDOW_HEIGHT - 50, 9 * 5);
+      snprintf(score_text, SCORE_TEXT_MAX_LENGTH, "%d", score_paddle_right);
+      batcher_text(score_text, WINDOW_WIDTH * 0.75f, WINDOW_HEIGHT - 50, 9 * 5);
 
     /* Render batches */
     batcher_render();
