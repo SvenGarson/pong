@@ -222,10 +222,9 @@ int main(void)
   /* Integration */
   double last_time_in_seconds = time_in_seconds();
   const float PADDLE_PIXELS_PER_SECOND = 500.0f;
-  const float BALL_PIXELS_PER_SECOND = 50.0f;
+  const float BALL_SPEED_PIXELS_PER_SECOND = 500.0f;
 
   /* Ball */
-  const float BALL_SPEED_PIXELS_PER_SECOND = 100.0f;
   const struct vec2f PLAYFIELD_CENTER = { WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f };
   struct ball ball = make_ball(
     PLAYFIELD_CENTER.x,
@@ -238,7 +237,10 @@ int main(void)
   /* Collision edges */
   const int PADDLE_HIT_INSET = 50;
   const struct edge_collider colliders[] = {
-    make_edge_collider(WINDOW_WIDTH - PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, WINDOW_HEIGHT)
+    make_edge_collider(PADDLE_HIT_INSET, 0, WINDOW_WIDTH - PADDLE_HIT_INSET, 0),
+    make_edge_collider(WINDOW_WIDTH - PADDLE_HIT_INSET, 0, WINDOW_WIDTH - PADDLE_HIT_INSET, WINDOW_HEIGHT),
+    make_edge_collider(WINDOW_WIDTH - PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, WINDOW_HEIGHT),
+    make_edge_collider(PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, 0)
   };
   const int collider_count = sizeof(colliders) / sizeof(struct edge_collider);
 
@@ -332,54 +334,95 @@ int main(void)
 
       /* Ball */
       /*
-          - for all colliders
-            - get shortest time + collider info
-          - to earliest surface + deflect velocity
+          - while ball has velo
+            + get early toi + surface info
+            + if no coll
+              - integrate and done
+            + else (collision)
+              - to surface
+              - scale to rest of time
+              - deflect
+          - re-set velocity magnitude
       */
-      const struct edge_collider * p_earlies_collider = NULL;
-      for (int collider_index = 0; collider_index < collider_count; collider_index++)
+      while (1)
       {
-        const struct edge_collider * const p_collider = colliders + collider_index;
-
-        /* Get ball point closes to current collider surface */
-        const struct vec2f * p_closest_corner = NULL;
-        float closest_corner_distance = 1000000.0f;
-        for (int i_ball_corner = 0; i_ball_corner < sizeof(ball_corners) / sizeof(ball_corners[0]); i_ball_corner++)
+        const struct edge_collider * p_earliest_collider = NULL;
+        float earliest_impact_time;
+        for (int collider_index = 0; collider_index < collider_count; collider_index++)
         {
-          const struct vec2f * const p_corner = ball_corners + i_ball_corner;
-          const struct vec2f edge_to_corner = vec2f_sub(*p_corner, p_collider->a);
-          const float corner_surface_distance = vec2f_dot(edge_to_corner, p_collider->surface_normal);
+          const struct edge_collider * const p_collider = colliders + collider_index;
 
-          if (corner_surface_distance < closest_corner_distance)
+          /* Get ball point closes to current collider surface */
+          const struct vec2f * p_closest_corner = NULL;
+          float closest_corner_distance = 10000000.0f;
+          for (int i_ball_corner = 0; i_ball_corner < sizeof(ball_corners) / sizeof(ball_corners[0]); i_ball_corner++)
           {
-            closest_corner_distance = corner_surface_distance;
-            p_closest_corner = p_corner;
+            const struct vec2f * const p_corner = ball_corners + i_ball_corner;
+            const struct vec2f edge_to_corner = vec2f_sub(*p_corner, p_collider->a);
+            const float corner_surface_distance = vec2f_dot(edge_to_corner, p_collider->surface_normal);
+
+            if (corner_surface_distance < closest_corner_distance)
+            {
+              closest_corner_distance = corner_surface_distance;
+              p_closest_corner = p_corner;
+            }
+          }
+
+          /* Ignore current collider the ball has already sunk under the collider - This should never happen */
+          if (closest_corner_distance < 0.0f || p_closest_corner == NULL)
+            continue;
+
+          /* Scale the ball velocity to the time-step - TODO-GS: Maybe just store the ball direction and set the scaled velocity once */
+          struct vec2f scaled_ball_velocity = vec2f_scale(ball.velocity, dts);
+
+          /* Determine time of impact by projecting the ball velocity - Ignore when ball moving away from surface*/
+          const float projected_velocity = vec2f_dot(scaled_ball_velocity, p_collider->surface_normal);
+          if (projected_velocity >= 0.0f)
+            continue;
+
+          /* Determine time of impact */
+          const float impact_time = closest_corner_distance / -projected_velocity;
+          if (impact_time < 0.0f || impact_time > 1.0f)
+            continue;
+
+          /* Keep track of earliest collision */
+          if (p_earliest_collider == NULL || impact_time < earliest_impact_time)
+          {
+            p_earliest_collider = p_collider;
+            earliest_impact_time = impact_time;
           }
         }
 
-        /* Ignore current collider the ball has already sunk under the collider - This should never happen */
-        if (closest_corner_distance < 0.0f || p_closest_corner == NULL)
-          continue;
-
-        /* Scale the ball velocity to the time-step - TODO-GS: Maybe just store the ball direction and set the scaled velocity once */
-        struct vec2f scaled_ball_velocity = vec2f_scale(ball.velocity, dts);
-
-        /* Determine time of impact by projecting the ball velocity - Ignore when ball moving away from surface*/
-        const float projected_velocity = vec2f_dot(scaled_ball_velocity, p_collider->surface_normal);
-        if (projected_velocity >= 0.0f)
-          continue;
-
-        /* Determine time of impact */
-        const float impact_time = closest_corner_distance / -projected_velocity;
-        if (impact_time >= 0.0f && impact_time <= 1.0f)
+        /* Check collision on frame */
+        if (p_earliest_collider == NULL)
         {
-          printf("\nHit!");
+          /* No collision - Fully integrate the balls velocity */
+          ball.position.x += ball.velocity.x * dts;
+          ball.position.y += ball.velocity.y * dts;  
+
+          /* Reset velocity magnitude */
+          ball.velocity = vec2f_normalize(ball.velocity);
+          ball.velocity = vec2f_scale(ball.velocity, BALL_SPEED_PIXELS_PER_SECOND);
+
+          /* Done with this frame */
+          break;
+        }
+        else
+        {
+          /* Collision - Move the ball to the impact surface */
+          struct vec2f scaled_ball_velocity = vec2f_scale(ball.velocity, dts);
+          ball.position.x += scaled_ball_velocity.x * earliest_impact_time;
+          ball.position.y += scaled_ball_velocity.y * earliest_impact_time;
+
+          /* Deflect the velocity */
+          ball.velocity.x = ball.velocity.x + (2.0f * fabs(ball.velocity.x) * p_earliest_collider->surface_normal.x);
+          ball.velocity.y = ball.velocity.y + (2.0f * fabs(ball.velocity.y) * p_earliest_collider->surface_normal.y);
+
+          /* Scale the deflected velocity to the time left in the frame */
+          const float integration_time_left = 1.0f - earliest_impact_time;
+          ball.velocity = vec2f_scale(ball.velocity, integration_time_left);
         }
       }
-
-      /* Integrate ball */
-      ball.position.x += BALL_PIXELS_PER_SECOND * dts;
-      ball.position.y += BALL_PIXELS_PER_SECOND * dts;
 
     /* Clear scene */
     glClear(GL_COLOR_BUFFER_BIT);
