@@ -16,13 +16,6 @@
 #define WINDOW_MAX_TITLE_LENGTH (64)
 
 /* Datatypes */
-struct edge_collider {
-  struct vec2f a;
-  struct vec2f b;
-  struct vec2f center;
-  struct vec2f surface_normal;
-};
-
 struct ball {
   struct vec2f position;
   float diameter;
@@ -32,6 +25,19 @@ struct ball {
 struct paddle {
   struct vec2f position;
   struct vec2f dimensions;
+};
+
+struct edge_collider {
+  struct vec2f a;
+  struct vec2f b;
+  struct vec2f center;
+  struct vec2f surface_normal;
+  struct paddle * p_associated_paddle;
+};
+
+struct range2f {
+  float min;
+  float max;
 };
 
 /* Constants */
@@ -118,12 +124,70 @@ struct vec2f left_normal(struct vec2f tangent)
   return (struct vec2f){ -tangent_norm.y, tangent_norm.x };
 }
 
+float flt_list_min(const float * p_float_list, size_t entries)
+{
+  const float * p_min = NULL;
+  for (int i = 0; i < entries; i++)
+  {
+    const float * p_value = p_float_list + i;
+    if (p_min == NULL || *p_value < *p_min)
+    {
+      p_min = p_value;
+    }
+  }
+
+  return *p_min;
+}
+
+float flt_list_max(const float * p_float_list, size_t entries)
+{
+  const float * p_max = NULL;
+  for (int i = 0; i < entries; i++)
+  {
+    const float * p_value = p_float_list + i;
+    if (p_max == NULL || *p_value > *p_max)
+    {
+      p_max = p_value;
+    }
+  }
+
+  return *p_max;
+}
+
+struct range2f project_region_onto_edge(struct region2Df * p_region, struct edge_collider * p_collider)
+{
+  /* Determine vectors from surface to region edges */
+  const struct vec2f collider_to_corner_1 = vec2f_sub((struct vec2f){ p_region->min.x, p_region->min.y }, p_collider->a);
+  const struct vec2f collider_to_corner_2 = vec2f_sub((struct vec2f){ p_region->max.x, p_region->min.y }, p_collider->a);
+  const struct vec2f collider_to_corner_3 = vec2f_sub((struct vec2f){ p_region->max.x, p_region->max.y }, p_collider->a);
+  const struct vec2f collider_to_corner_4 = vec2f_sub((struct vec2f){ p_region->min.x, p_region->max.y }, p_collider->a);
+
+  /* Project edges onto collider */
+  const struct vec2f collider_tangent = vec2f_normalize(vec2f_sub(p_collider->b, p_collider->a));
+  const float projections[] = {
+    vec2f_dot(collider_to_corner_1, collider_tangent),
+    vec2f_dot(collider_to_corner_2, collider_tangent),
+    vec2f_dot(collider_to_corner_3, collider_tangent),
+    vec2f_dot(collider_to_corner_4, collider_tangent)
+  };
+
+  /* Return the projected min/max range */
+  struct range2f projected_range;
+
+  const size_t projection_count = sizeof(projections) / sizeof(projections[0]);
+  return (struct range2f){
+    flt_list_min(projections, projection_count),
+    flt_list_max(projections, projection_count)
+  };
+}
+
 struct edge_collider make_edge_collider
 (
   float ax,
   float ay,
   float bx,
-  float by
+  float by,
+  struct paddle * p_paddle
 )
 {
   struct edge_collider collider;
@@ -137,6 +201,7 @@ struct edge_collider make_edge_collider
   collider.surface_normal = left_normal(
     edge_tangent(collider.a, collider.b)
   );
+  collider.p_associated_paddle = p_paddle;
 
   return collider;
 }
@@ -144,6 +209,40 @@ struct edge_collider make_edge_collider
 double time_in_seconds(void)
 {
   return (double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency();
+}
+
+struct region2Df region_for_paddles(struct paddle * p_paddle)
+{
+  struct region2Df region_paddle;
+
+  region_paddle.min = (struct vec2f){
+    p_paddle->position.x - p_paddle->dimensions.x * 0.5f,
+    p_paddle->position.y - p_paddle->dimensions.y * 0.5f
+  };
+
+  region_paddle.max = (struct vec2f){
+    p_paddle->position.x + p_paddle->dimensions.x * 0.5f,
+    p_paddle->position.y + p_paddle->dimensions.y * 0.5f
+  };
+
+  return region_paddle;
+}
+
+struct region2Df region_for_ball(struct ball * p_ball)
+{
+  struct region2Df region_ball;
+
+  region_ball.min = (struct vec2f){
+    p_ball->position.x - p_ball->diameter * 0.5f,
+    p_ball->position.y - p_ball->diameter * 0.5f
+  };
+
+  region_ball.max = (struct vec2f){
+    p_ball->position.x + p_ball->diameter * 0.5f,
+    p_ball->position.y + p_ball->diameter * 0.5f
+  };
+
+  return region_ball;
 }
 
 /* Pong entry point */
@@ -251,18 +350,9 @@ int main(void)
     BALL_SPEED_PIXELS_PER_SECOND
   );
 
-  /* Playfield collision edges */
-  const int PADDLE_HIT_INSET = 50;
-  const struct edge_collider colliders[] = {
-    make_edge_collider(PADDLE_HIT_INSET, 0, WINDOW_WIDTH - PADDLE_HIT_INSET, 0),
-    make_edge_collider(WINDOW_WIDTH - PADDLE_HIT_INSET, 0, WINDOW_WIDTH - PADDLE_HIT_INSET, WINDOW_HEIGHT),
-    make_edge_collider(WINDOW_WIDTH - PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, WINDOW_HEIGHT),
-    make_edge_collider(PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, 0)
-  };
-  const int collider_count = sizeof(colliders) / sizeof(struct edge_collider);
-
   /* Paddles */
   const struct vec2f PADDLE_DIMENSIONS = { 5, WINDOW_HEIGHT * 0.2f };
+  const int PADDLE_HIT_INSET = 50;
   struct paddle paddle_left = make_paddle(
     PADDLE_HIT_INSET - (PADDLE_DIMENSIONS.x * 0.5f),
     WINDOW_HEIGHT * 0.5f,
@@ -276,6 +366,15 @@ int main(void)
     PADDLE_DIMENSIONS.x,
     PADDLE_DIMENSIONS.y
   );
+
+  /* Playfield collision edges */
+  const struct edge_collider colliders[] = {
+    /* Bottom collider */ make_edge_collider(PADDLE_HIT_INSET, 0, WINDOW_WIDTH - PADDLE_HIT_INSET, 0, NULL),
+    /* Right collider  */ make_edge_collider(WINDOW_WIDTH - PADDLE_HIT_INSET, 0, WINDOW_WIDTH - PADDLE_HIT_INSET, WINDOW_HEIGHT, &paddle_right),
+    /* Top collider    */ make_edge_collider(WINDOW_WIDTH - PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, WINDOW_HEIGHT, NULL),
+    /* Left collider   */ make_edge_collider(PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, 0, &paddle_left)
+  };
+  const int collider_count = sizeof(colliders) / sizeof(struct edge_collider);
 
   /* Gameloop */
   pong_bool_te window_close_requested = PONG_FALSE;
@@ -404,7 +503,7 @@ int main(void)
         { region_ball.min.x, region_ball.max.y }
       };
 
-      /* Ball */
+      /* Integrate the ball in the scene */
       while (1)
       {
         const struct edge_collider * p_earliest_collider = NULL;
@@ -457,7 +556,7 @@ int main(void)
         /* Check collision on frame */
         if (p_earliest_collider == NULL)
         {
-          /* No collision - Fully integrate the balls velocity */
+          /* No collision - Fully integrate the ball velocity */
           ball.position.x += ball.velocity.x * dts;
           ball.position.y += ball.velocity.y * dts;  
 
@@ -465,7 +564,7 @@ int main(void)
           ball.velocity = vec2f_normalize(ball.velocity);
           ball.velocity = vec2f_scale(ball.velocity, BALL_SPEED_PIXELS_PER_SECOND);
 
-          /* Done with this frame */
+          /* Done integrating within this frame */
           break;
         }
         else
@@ -475,9 +574,30 @@ int main(void)
           ball.position.x += scaled_ball_velocity.x * earliest_impact_time;
           ball.position.y += scaled_ball_velocity.y * earliest_impact_time;
 
-          /* Deflect the velocity */
-          ball.velocity.x = ball.velocity.x + (2.0f * fabs(ball.velocity.x) * p_earliest_collider->surface_normal.x);
-          ball.velocity.y = ball.velocity.y + (2.0f * fabs(ball.velocity.y) * p_earliest_collider->surface_normal.y);
+          /* Check if the associated paddle is hit on the surface, if any */
+          pong_bool_te paddle_missed_ball = PONG_FALSE;
+          if (p_earliest_collider->p_associated_paddle != NULL)
+          {
+            /* Project paddle extends onto the edge */
+            struct region2Df region_paddle = region_for_paddles(p_earliest_collider->p_associated_paddle);
+            struct range2f paddle_surface_range = project_region_onto_edge(&region_paddle, p_earliest_collider);
+
+            struct region2Df region_ball = region_for_ball(&ball);
+            struct range2f ball_surface_range = project_region_onto_edge(&region_ball, p_earliest_collider);
+
+            /* Deflect ball only if both extends overlap */
+            paddle_missed_ball = (
+              ball_surface_range.max < paddle_surface_range.min ||
+              ball_surface_range.min > paddle_surface_range.max
+            ) ? PONG_TRUE : PONG_FALSE;
+          }
+
+          /* Deflect the velocity when the paddle was hit or the collider has no paddle associated */
+          if (!paddle_missed_ball)
+          {
+            ball.velocity.x = ball.velocity.x + (2.0f * fabs(ball.velocity.x) * p_earliest_collider->surface_normal.x);
+            ball.velocity.y = ball.velocity.y + (2.0f * fabs(ball.velocity.y) * p_earliest_collider->surface_normal.y);
+          }
 
           /* Scale the deflected velocity to the time left in the frame */
           const float integration_time_left = 1.0f - earliest_impact_time;
