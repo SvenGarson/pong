@@ -7,10 +7,27 @@
 #include <SDL2/SDL_opengl.h>
 #include <GL/glu.h>
 #include <vec2i.h>
+#include <vec2f.h>
 #include <batcher.h>
+#include <region2Df.h>
+#include <math.h>
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
+
+/* Datatypes */
+struct edge_collider {
+  struct vec2f a;
+  struct vec2f b;
+  struct vec2f center;
+  struct vec2f surface_normal;
+};
+
+struct ball {
+  struct vec2f position;
+  float diameter;
+  struct vec2f velocity;
+};
 
 /* Constants */
 const char * WINDOW_TITLE = "Pong";
@@ -30,6 +47,83 @@ void log_opengl_error(void)
     printf("\n\t[%-3d] %s", error_index++, gluErrorString(gl_error));
     gl_error = glGetError();
   }
+}
+
+struct ball make_ball(float center_x, float center_y, float diameter, float velocity_x, float velocity_y)
+{
+  struct ball ball;
+
+  ball.position = (struct vec2f){ center_x, center_y };
+  ball.diameter = diameter;
+  ball.velocity = (struct vec2f){ velocity_x, velocity_y };
+
+  return ball;
+}
+
+struct vec2f vec2f_sub(struct vec2f left, struct vec2f right)
+{
+  return (struct vec2f){
+    left.x - right.x,
+    left.y - right.y
+  };
+}
+
+struct vec2f vec2f_scale(struct vec2f v, float scale)
+{
+  return (struct vec2f){ v.x * scale, v.y * scale };
+}
+
+float vec2f_dot(struct vec2f a, struct vec2f b)
+{
+  return (a.x * b.x) + (a.y * b.y);
+}
+
+float vec2f_length(struct vec2f v)
+{
+  return sqrt((v.x * v.x) + (v.y * v.y));
+}
+
+struct vec2f vec2f_normalize(struct vec2f v)
+{
+  const float vlen = vec2f_length(v);
+  if (vlen != 0.0f)
+    return (struct vec2f){ v.x / vlen, v.y / vlen};
+  else
+    return v;
+}
+
+struct vec2f edge_tangent(struct vec2f a, struct vec2f b)
+{
+  return vec2f_normalize(vec2f_sub(b, a));
+}
+
+struct vec2f left_normal(struct vec2f tangent)
+{
+  const struct vec2f tangent_norm = vec2f_normalize(tangent);
+  return (struct vec2f){ -tangent_norm.y, tangent_norm.x };
+}
+
+struct edge_collider make_edge_collider
+(
+  float ax,
+  float ay,
+  float bx,
+  float by
+)
+{
+  struct edge_collider collider;
+
+  collider.a = (struct vec2f){ ax, ay };
+  collider.b = (struct vec2f){ bx, by };
+  collider.center = (struct vec2f){
+    collider.a.x + 0.5f * (collider.b.x - collider.a.x),
+    collider.a.y + 0.5f * (collider.b.y - collider.a.y)
+  };
+  collider.surface_normal = left_normal(
+    edge_tangent(collider.a, collider.b)
+  );
+
+  return collider;
 }
 
 double time_in_seconds(void)
@@ -130,19 +224,23 @@ int main(void)
   const float PADDLE_PIXELS_PER_SECOND = 500.0f;
   const float BALL_PIXELS_PER_SECOND = 50.0f;
 
-  /* Positioning and sizing */
-  const int PADDLE_INSET = 50;
-  const struct vec2i PADDLE_DIMENSIONS = { 20, 50 };
-  struct vec2f paddle_left_pos = { PADDLE_INSET, WINDOW_HEIGHT / 2 };
-  struct vec2f paddle_right_pos = { WINDOW_WIDTH - PADDLE_INSET - PADDLE_DIMENSIONS.x, WINDOW_HEIGHT / 2 };
-  const int BALL_SIZE = 15;
-  const struct vec2f BALL_SPAWN_POS = { (WINDOW_WIDTH / 2.0f) - (BALL_SIZE / 2.0f), (WINDOW_HEIGHT / 2.0f) - (BALL_SIZE / 2.0f) };
-  struct vec2f ball_pos = BALL_SPAWN_POS;
-  struct vec2f ball_velocity = { BALL_PIXELS_PER_SECOND, BALL_PIXELS_PER_SECOND };
+  /* Ball */
+  const float BALL_SPEED_PIXELS_PER_SECOND = 100.0f;
+  const struct vec2f PLAYFIELD_CENTER = { WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f };
+  struct ball ball = make_ball(
+    PLAYFIELD_CENTER.x,
+    PLAYFIELD_CENTER.y,
+    30.0f,
+    BALL_SPEED_PIXELS_PER_SECOND,
+    BALL_SPEED_PIXELS_PER_SECOND
+  );
 
-  /* Scoring */
-  int score_left = 0;
-  int score_right = 0;
+  /* Collision edges */
+  const int PADDLE_HIT_INSET = 50;
+  const struct edge_collider colliders[] = {
+    make_edge_collider(WINDOW_WIDTH - PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, WINDOW_HEIGHT)
+  };
+  const int collider_count = sizeof(colliders) / sizeof(struct edge_collider);
 
   /* Gameloop */
   pong_bool_te window_close_requested = PONG_FALSE;
@@ -150,7 +248,7 @@ int main(void)
   {
     /* Integration */
     const double new_time_in_seconds = time_in_seconds();
-    const double delta_time_in_seconds = new_time_in_seconds - last_time_in_seconds;
+    const double dts = new_time_in_seconds - last_time_in_seconds;
     last_time_in_seconds = new_time_in_seconds;
 
     /* FPS counter */
@@ -217,82 +315,125 @@ int main(void)
       }
     }
 
-    /* Pong logic */
-    /* Controlling paddles */
-    if (paddle_left_up_pressed)
-    {
-      paddle_left_pos.y += PADDLE_PIXELS_PER_SECOND * delta_time_in_seconds;
-    }
-    if (paddle_left_down_pressed)
-    {
-      paddle_left_pos.y -= PADDLE_PIXELS_PER_SECOND * delta_time_in_seconds;
-    }
-    if (paddle_left_pos.y + PADDLE_DIMENSIONS.y >= WINDOW_HEIGHT)
-      paddle_left_pos.y = WINDOW_HEIGHT - PADDLE_DIMENSIONS.y;
-    if (paddle_left_pos.y <= 0.0f)
-      paddle_left_pos.y = 0.0f;
+    /* Integrate scene objects */
+      /* Compute ball bounding box */
+      const struct region2Df region_ball = {
+        { ball.position.x - ball.diameter * 0.5f, ball.position.y - ball.diameter * 0.5f },
+        { ball.position.x + ball.diameter * 0.5f, ball.position.y + ball.diameter * 0.5f }
+      };
 
-    /* Integrating the ball - TODO-GS: Make this continuous */
-    /* Collision detection */
-    /*
-        - Continuous check against edges (vertical and horizontal) by TOI
-        - Set position to surface and deflect + scale the velocity to the rest?
-        - Keep integrating until the velocity fully consumed for the integration step
+      /* Compute list of ball corner positions */
+      struct vec2f ball_corners[] = {
+        { region_ball.min.x, region_ball.min.y },
+        { region_ball.max.x, region_ball.min.y },
+        { region_ball.max.x, region_ball.max.y },
+        { region_ball.min.x, region_ball.max.y }
+      };
 
-        Q & A
-          - How to react to two exact collisions on both axis?
-            Handle both if TOI very close together!? Is that every relevant?
-    */
-    /* Continuous collision detection and deflection */
-    const struct region2Df BALL_REGION = { { ball_pos.x, ball_pos.y }, { ball_pos.x + BALL_SIZE, ball_pos.y + BALL_SIZE }};
-    /* Vertical playfield bounds */
-    const float TOI_PLAYFIELD_TOP = (WINDOW_HEIGHT - BALL_REGION.max.y) / ball_velocity.y;
-    
-    /* Velocity */
-    ball_pos.x += ball_velocity.x * delta_time_in_seconds;
-    ball_pos.y += ball_velocity.y * delta_time_in_seconds;
-    /* Reset and scoring */
-    if ((ball_pos.x + BALL_SIZE) < 0.0f)
-    {
-      /* Right player scores - Left player turn */
-      score_right++;
-      ball_pos = BALL_SPAWN_POS;
-      ball_velocity = (struct vec2f){ BALL_PIXELS_PER_SECOND, BALL_PIXELS_PER_SECOND };
-    }
-    if (ball_pos.x >= WINDOW_WIDTH)
-    {
-      /* Left player scores - Right player turn */
-      score_left++;
-      ball_pos = BALL_SPAWN_POS;
-      ball_velocity = (struct vec2f){ -BALL_PIXELS_PER_SECOND, BALL_PIXELS_PER_SECOND };
-    }
+      /* Ball */
+      /*
+          - for all colliders
+            - get shortest time + collider info
+          - to earliest surface + deflect velocity
+      */
+      const struct edge_collider * p_earlies_collider = NULL;
+      for (int collider_index = 0; collider_index < collider_count; collider_index++)
+      {
+        const struct edge_collider * const p_collider = colliders + collider_index;
 
-    /* Batch scene data */
-    /* Left paddle */
-    batcher_color(255, 255, 255, 255);
-    batcher_quadf(paddle_left_pos.x, paddle_left_pos.y, paddle_left_pos.x + PADDLE_DIMENSIONS.x, paddle_left_pos.y + PADDLE_DIMENSIONS.y);
+        /* Get ball point closes to current collider surface */
+        const struct vec2f * p_closest_corner = NULL;
+        float closest_corner_distance = 1000000.0f;
+        for (int i_ball_corner = 0; i_ball_corner < sizeof(ball_corners) / sizeof(ball_corners[0]); i_ball_corner++)
+        {
+          const struct vec2f * const p_corner = ball_corners + i_ball_corner;
+          const struct vec2f edge_to_corner = vec2f_sub(*p_corner, p_collider->a);
+          const float corner_surface_distance = vec2f_dot(edge_to_corner, p_collider->surface_normal);
 
-    /* Right paddle */
-    batcher_color(255, 255, 255, 255);
-    batcher_quadf(paddle_right_pos.x, paddle_right_pos.y, paddle_right_pos.x + PADDLE_DIMENSIONS.x, paddle_right_pos.y + PADDLE_DIMENSIONS.y);
+          if (corner_surface_distance < closest_corner_distance)
+          {
+            closest_corner_distance = corner_surface_distance;
+            p_closest_corner = p_corner;
+          }
+        }
 
-    /* Ball */
-    batcher_color(255, 255, 255, 255);
-    batcher_quadf(BALL_REGION.min.x, BALL_REGION.min.y, BALL_REGION.max.x, BALL_REGION.max.y);
+        /* Ignore current collider the ball has already sunk under the collider - This should never happen */
+        if (closest_corner_distance < 0.0f || p_closest_corner == NULL)
+          continue;
 
-    /* Left score */
-    batcher_color(255, 255, 255, 255);
-    char score_text[16];
-    snprintf(score_text, 16, "%2d", score_left);
-    batcher_text(score_text, WINDOW_WIDTH * 0.25, WINDOW_HEIGHT * 0.95, 9 * 8);
-    snprintf(score_text, 16, "%2d", score_right);
-    batcher_text(score_text, WINDOW_WIDTH * 0.55, WINDOW_HEIGHT * 0.95, 9 * 8);
+        /* Scale the ball velocity to the time-step - TODO-GS: Maybe just store the ball direction and set the scaled velocity once */
+        struct vec2f scaled_ball_velocity = vec2f_scale(ball.velocity, dts);
+
+        /* Determine time of impact by projecting the ball velocity - Ignore when ball moving away from surface*/
+        const float projected_velocity = vec2f_dot(scaled_ball_velocity, p_collider->surface_normal);
+        if (projected_velocity >= 0.0f)
+          continue;
+
+        /* Determine time of impact */
+        const float impact_time = closest_corner_distance / -projected_velocity;
+        if (impact_time >= 0.0f && impact_time <= 1.0f)
+        {
+          printf("\nHit!");
+        }
+      }
+
+      /* Integrate ball */
+      ball.position.x += BALL_PIXELS_PER_SECOND * dts;
+      ball.position.y += BALL_PIXELS_PER_SECOND * dts;
 
     /* Clear scene */
     glClear(GL_COLOR_BUFFER_BIT);
 
+    /* Render scene */
+    batcher_quadf(
+      ball.position.x - ball.diameter * 0.5f,
+      ball.position.y - ball.diameter * 0.5f,
+      ball.position.x + ball.diameter * 0.5f,
+      ball.position.y + ball.diameter * 0.5f
+    );
+
     /* Render batches */
     batcher_render();
+
+    /* TODO-GS: Remove debug rendering */
+    for (int collider_index = 0; collider_index < collider_count; collider_index++)
+    {
+      const struct edge_collider * const p_collider = colliders + collider_index;
+      /* Tangent and surface normal */
+      glColor3ub(150, 150, 150);
+      glLineWidth(2.0f);
+      glBegin(GL_LINES);
+        /* Edge surface */
+        glVertex2f(p_collider->a.x, p_collider->a.y);
+        glVertex2f(p_collider->b.x, p_collider->b.y);
+
+        /* Edge surface normal */
+        const int NORMAL_LENGTH = 40.0f;
+        glVertex2f(p_collider->center.x, p_collider->center.y);
+        glVertex2f(
+          p_collider->center.x + p_collider->surface_normal.x * NORMAL_LENGTH,
+          p_collider->center.y + p_collider->surface_normal.y * NORMAL_LENGTH
+        );
+      glEnd();
+
+      /* Edge points and center */
+      glColor3ub(255, 0, 0);
+      glPointSize(5.0f);
+      glBegin(GL_POINTS);
+        glVertex2f(p_collider->center.x, p_collider->center.y);
+        glVertex2f(p_collider->a.x, p_collider->a.y);
+        glVertex2f(p_collider->b.x, p_collider->b.y);
+      glEnd();
+
+      /* Ball corner points */
+      glColor3ub(0, 255, 0);
+      glBegin(GL_POINTS);
+        for (int corner_index = 0; corner_index < sizeof(ball_corners) / sizeof(ball_corners[0]); corner_index++)
+        {
+          glVertex2f(ball_corners[corner_index].x, ball_corners[corner_index].y);
+        }
+      glEnd();
+    }
 
     /* Check OpenGL errors */
     log_opengl_error();

@@ -70,6 +70,11 @@ This document contains working notes throughout the completion of the project
   + How to make builds for different platforms?
   + How to test the game?
 
+## Collision detection and resolution
+- move paddles to position
+- integrate ball
+- resolve collision for all edges and paddles
+
 ## Code
 - Use a linter
 - Implement testing and development build flags - Through executable arguments?
