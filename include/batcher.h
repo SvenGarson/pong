@@ -237,7 +237,6 @@ void batcher_render(void)
 
       /* Begin the first batch */
       last_texture_handle = p_triangle->texture_handle;
-      glColor4ub(p_triangle->color.red, p_triangle->color.green, p_triangle->color.blue, p_triangle->color.alpha);
       glBegin(GL_TRIANGLES);
     }
     else
@@ -263,12 +262,12 @@ void batcher_render(void)
 
         /* Begin the next batch */
         last_texture_handle = p_triangle->texture_handle;
-        glColor4ub(p_triangle->color.red, p_triangle->color.green, p_triangle->color.blue, p_triangle->color.alpha);
         glBegin(GL_TRIANGLES);
       }
     }
 
     /* Render data with batch setting */
+    glColor4ub(p_triangle->color.red, p_triangle->color.green, p_triangle->color.blue, p_triangle->color.alpha);
     glTexCoord2f(p_triangle->tcv0.x, p_triangle->tcv0.y);
     glVertex2f(p_triangle->v0.x, p_triangle->v0.y);
 

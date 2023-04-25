@@ -29,6 +29,11 @@ struct ball {
   struct vec2f velocity;
 };
 
+struct paddle {
+  struct vec2f position;
+  struct vec2f dimensions;
+};
+
 /* Constants */
 const char * WINDOW_TITLE = "Pong";
 const int WINDOW_WIDTH = 800;
@@ -59,6 +64,16 @@ struct ball make_ball(float center_x, float center_y, float diameter, float velo
 
   return ball;
 }
+
+struct paddle make_paddle(float center_x, float center_y, float dimension_x, float dimension_y)
+{
+  struct paddle paddle;
+
+  paddle.position = (struct vec2f){ center_x, center_y };
+  paddle.dimensions = (struct vec2f){ dimension_x, dimension_y };
+
+  return paddle;  
+};
 
 struct vec2f vec2f_sub(struct vec2f left, struct vec2f right)
 {
@@ -218,11 +233,13 @@ int main(void)
   /* Input */
   pong_bool_te paddle_left_up_pressed = PONG_FALSE;
   pong_bool_te paddle_left_down_pressed = PONG_FALSE;
+  pong_bool_te paddle_right_up_pressed = PONG_FALSE;
+  pong_bool_te paddle_right_down_pressed = PONG_FALSE;
 
   /* Integration */
   double last_time_in_seconds = time_in_seconds();
   const float PADDLE_PIXELS_PER_SECOND = 500.0f;
-  const float BALL_SPEED_PIXELS_PER_SECOND = 500.0f;
+  const float BALL_SPEED_PIXELS_PER_SECOND = 350.0f;
 
   /* Ball */
   const struct vec2f PLAYFIELD_CENTER = { WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f };
@@ -234,7 +251,7 @@ int main(void)
     BALL_SPEED_PIXELS_PER_SECOND
   );
 
-  /* Collision edges */
+  /* Playfield collision edges */
   const int PADDLE_HIT_INSET = 50;
   const struct edge_collider colliders[] = {
     make_edge_collider(PADDLE_HIT_INSET, 0, WINDOW_WIDTH - PADDLE_HIT_INSET, 0),
@@ -243,6 +260,22 @@ int main(void)
     make_edge_collider(PADDLE_HIT_INSET, WINDOW_HEIGHT, PADDLE_HIT_INSET, 0)
   };
   const int collider_count = sizeof(colliders) / sizeof(struct edge_collider);
+
+  /* Paddles */
+  const struct vec2f PADDLE_DIMENSIONS = { 5, WINDOW_HEIGHT * 0.2f };
+  struct paddle paddle_left = make_paddle(
+    PADDLE_HIT_INSET - (PADDLE_DIMENSIONS.x * 0.5f),
+    WINDOW_HEIGHT * 0.5f,
+    PADDLE_DIMENSIONS.x,
+    PADDLE_DIMENSIONS.y
+  );
+
+  struct paddle paddle_right = make_paddle(
+    WINDOW_WIDTH - PADDLE_HIT_INSET + (PADDLE_DIMENSIONS.x * 0.5f),
+    WINDOW_HEIGHT * 0.5f,
+    PADDLE_DIMENSIONS.x,
+    PADDLE_DIMENSIONS.y
+  );
 
   /* Gameloop */
   pong_bool_te window_close_requested = PONG_FALSE;
@@ -298,6 +331,12 @@ int main(void)
             case SDLK_LCTRL:
               paddle_left_down_pressed = PONG_TRUE;
               break;
+            case SDLK_RSHIFT:
+              paddle_right_up_pressed = PONG_TRUE;
+              break;
+            case SDLK_RCTRL:
+              paddle_right_down_pressed = PONG_TRUE;
+              break;
           }
           break;
         case SDL_KEYUP:
@@ -310,6 +349,12 @@ int main(void)
             case SDLK_LCTRL:
               paddle_left_down_pressed = PONG_FALSE;
               break;
+            case SDLK_RSHIFT:
+              paddle_right_up_pressed = PONG_FALSE;
+              break;
+            case SDLK_RCTRL:
+              paddle_right_down_pressed = PONG_FALSE;
+              break;
           }
           break;
         default:
@@ -318,13 +363,40 @@ int main(void)
     }
 
     /* Integrate scene objects */
-      /* Compute ball bounding box */
+      /* Paddles */
+      if (paddle_left_up_pressed) paddle_left.position.y += PADDLE_PIXELS_PER_SECOND * dts;
+      if (paddle_left_down_pressed) paddle_left.position.y -= PADDLE_PIXELS_PER_SECOND * dts;
+
+      if (paddle_right_up_pressed) paddle_right.position.y += PADDLE_PIXELS_PER_SECOND * dts;
+      if (paddle_right_down_pressed) paddle_right.position.y -= PADDLE_PIXELS_PER_SECOND * dts;
+
+      /* Cap vertical paddle movement */
+      if (paddle_left.position.y + paddle_left.dimensions.y * 0.5f >= WINDOW_HEIGHT) 
+        paddle_left.position.y = WINDOW_HEIGHT - (paddle_left.dimensions.y * 0.5f);
+      if (paddle_left.position.y - paddle_left.dimensions.y * 0.5f <= 0.0f) 
+        paddle_left.position.y = paddle_left.dimensions.y * 0.5f;
+
+      if (paddle_right.position.y + paddle_right.dimensions.y * 0.5f >= WINDOW_HEIGHT) 
+        paddle_right.position.y = WINDOW_HEIGHT - (paddle_right.dimensions.y * 0.5f);
+      if (paddle_right.position.y - paddle_right.dimensions.y * 0.5f <= 0.0f) 
+        paddle_right.position.y = paddle_right.dimensions.y * 0.5f;
+
+      const struct region2Df region_paddle_left = {
+        { paddle_left.position.x - paddle_left.dimensions.x * 0.5f, paddle_left.position.y - paddle_left.dimensions.y * 0.5f },
+        { paddle_left.position.x + paddle_left.dimensions.x * 0.5f, paddle_left.position.y + paddle_left.dimensions.y * 0.5f }
+      };
+
+      const struct region2Df region_paddle_right = {
+        { paddle_right.position.x - paddle_right.dimensions.x * 0.5f, paddle_right.position.y - paddle_right.dimensions.y * 0.5f },
+        { paddle_right.position.x + paddle_right.dimensions.x * 0.5f, paddle_right.position.y + paddle_right.dimensions.y * 0.5f }
+      };
+
+      /* Compute list of ball corner positions */
       const struct region2Df region_ball = {
         { ball.position.x - ball.diameter * 0.5f, ball.position.y - ball.diameter * 0.5f },
         { ball.position.x + ball.diameter * 0.5f, ball.position.y + ball.diameter * 0.5f }
       };
 
-      /* Compute list of ball corner positions */
       struct vec2f ball_corners[] = {
         { region_ball.min.x, region_ball.min.y },
         { region_ball.max.x, region_ball.min.y },
@@ -333,17 +405,6 @@ int main(void)
       };
 
       /* Ball */
-      /*
-          - while ball has velo
-            + get early toi + surface info
-            + if no coll
-              - integrate and done
-            + else (collision)
-              - to surface
-              - scale to rest of time
-              - deflect
-          - re-set velocity magnitude
-      */
       while (1)
       {
         const struct edge_collider * p_earliest_collider = NULL;
@@ -428,12 +489,26 @@ int main(void)
     glClear(GL_COLOR_BUFFER_BIT);
 
     /* Render scene */
-    batcher_quadf(
-      ball.position.x - ball.diameter * 0.5f,
-      ball.position.y - ball.diameter * 0.5f,
-      ball.position.x + ball.diameter * 0.5f,
-      ball.position.y + ball.diameter * 0.5f
-    );
+      /* Paddles */
+      batcher_color(255, 0, 0, 255);
+      batcher_quadf(
+        region_paddle_left.min.x, region_paddle_left.min.y,
+        region_paddle_left.max.x, region_paddle_left.max.y
+      );
+      batcher_color(0, 255, 0, 255);
+      batcher_quadf(
+        region_paddle_right.min.x, region_paddle_right.min.y,
+        region_paddle_right.max.x, region_paddle_right.max.y
+      );
+
+      /* Ball */
+      batcher_color(255, 255, 255, 255);
+      batcher_quadf(
+        ball.position.x - ball.diameter * 0.5f,
+        ball.position.y - ball.diameter * 0.5f,
+        ball.position.x + ball.diameter * 0.5f,
+        ball.position.y + ball.diameter * 0.5f
+      );
 
     /* Render batches */
     batcher_render();
@@ -441,6 +516,7 @@ int main(void)
     /* TODO-GS: Remove debug rendering */
     for (int collider_index = 0; collider_index < collider_count; collider_index++)
     {
+      break;
       const struct edge_collider * const p_collider = colliders + collider_index;
       /* Tangent and surface normal */
       glColor3ub(150, 150, 150);
