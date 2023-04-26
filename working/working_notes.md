@@ -14,55 +14,39 @@ This document contains working notes throughout the completion of the project
   + [OK] Random initian velocity in terms of horizontal and vertical momentum
   + [OK] Random vertical momentum towards the player that scored last
   + Bouncing
-    - [OK] Bounces of the top and bottom playfield region
+    - [OK] Bounce of the top and bottom playfield region
     - [OK] Bounce of the paddles
-    - [  ] Bounde of the paddle based on the relative impact position -> game feel
+    - [  ] Bounce of the paddle based on the relative impact position -> game feel
 - Playfield
   + [OK] Vertical divider in the middle of the play field
 - Round
   + [OK] Counter over the player regions
 - Audio
   + Play music and audio effects in the menu
-  + Paddle sfc
-  + Ball sfx
-  + Score sfx
+  + [OK] Ball hits collider
+  + [OK] Score sfx
 - Scoring
   + [OK] Score displayed per player
   + [OK] Increment score when ball over opponents region
   + [OK] Reset ball to center position when one player scored
 - Menu
   + Main menu
-    + Play (Mode choice)
+    + Play
     + Options
     + Quit to desktop
   + Game pause
     + Options
     + Back to main menu
     + Restart and whatnot
-- Options
-  + Window resolution and border/fullscreen
-  + Display sync options
-  + Input mapping
-  + Resolution
-  + Scaling
-  + Sounds and volume
-  + Overlay song
-  + Variables: Padde position; ranges of motion; velocities
-  + Dev mode with variable sliders etc.
-- Sound effects
-  + Everywhere
-- Juice
-- Input
-  + Keyboard input
-  + No mouse input for menu and gameplay
+  + Options
+    - Window resolution
+    - Fullscreen latch
+    - Display sync options
+    - Input mapping
+    - Virtual resolution and scaling
+    - Sound: Music and sfx volume
 - Help
-  + Display contextual controls everywhere
-- Platforms
-  + Windows
-  + Linux
-- Publishing
-  + Publish the thing somewhere through builds
-  + Provide build tools like make/Cmake
+  + Display controls everywhere
 - Q & A
   + Size and position everything to some virtual resolution or let things grow naturally?
     Also use min and max dimensions for everything.

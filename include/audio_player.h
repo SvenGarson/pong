@@ -25,16 +25,6 @@ pong_bool_te audio_player_initialize(void)
 	return PONG_TRUE;
 }
 
-/*
-		# Example usage:
-			- int id = register_sound_effect(path)
-			- play_sound_effect(id)
-
-		# Effects
-			- id -1 means not usable for reasons
-				+ no more room
-				+ could not be loaded
-*/
 int audio_player_register_sound_effect(const char * p_sound_effect_filename)
 {
 	if (sound_effects_count >= AUDIO_PLAYER_MAX_SOUND_EFFECTS)
@@ -96,7 +86,12 @@ int audio_player_play_sound_effect(int sound_effect_id)
 void audio_player_cleanup(void)
 {
 	/* Cleanup loaded sound effect and music resources */
-
+	for (int sfx_index = 0; sfx_index < sound_effects_count; sfx_index++)
+	{
+		free(sound_effects[sfx_index]);
+		sound_effects[sfx_index] = NULL;
+	}
+	sound_effects_count = 0;
 
 	/* Cleanup subsystem */
 	Mix_Quit();
