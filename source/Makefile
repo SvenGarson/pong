@@ -10,10 +10,10 @@ ODIR=obj
 LDIR =../lib
 
 # Linked libraries
-LIBS=-lm -lSDL2 -lGL -lGLU -lSDL2_image
+LIBS=-lm -lGL -lGLU -lSDL2 -lSDL2_image -lSDL2_mixer
 
 # Header that source files depend on TODO-GS: Add all dependencies
-_DEPS = pong_bool.h text_renderer.h texture_loader.h batcher.h
+_DEPS = pong_bool.h text_renderer.h texture_loader.h batcher.h audio_player.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 # Compilation unit object files to build

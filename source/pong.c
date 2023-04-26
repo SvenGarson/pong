@@ -11,6 +11,8 @@
 #include <batcher.h>
 #include <region2Df.h>
 #include <math.h>
+#include <time.h>
+#include <audio_player.h>
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
@@ -45,6 +47,8 @@ struct range2f {
 const char * WINDOW_TITLE = "Pong";
 const int WINDOW_WIDTH = 800;
 const int WINDOW_HEIGHT = 600;
+const float PADDLE_PIXELS_PER_SECOND = 500.0f;
+const float BALL_SPEED_PIXELS_PER_SECOND = 350.0f;
 
 /* Helper functions */
 void log_opengl_error(void)
@@ -70,6 +74,11 @@ struct ball make_ball(float center_x, float center_y, float diameter, float velo
   ball.velocity = (struct vec2f){ velocity_x, velocity_y };
 
   return ball;
+}
+
+double degrees_to_radians(double degrees)
+{
+  return degrees * (M_PI / 180.0);
 }
 
 struct paddle make_paddle(float center_x, float center_y, float dimension_x, float dimension_y)
@@ -123,6 +132,52 @@ struct vec2f left_normal(struct vec2f tangent)
 {
   const struct vec2f tangent_norm = vec2f_normalize(tangent);
   return (struct vec2f){ -tangent_norm.y, tangent_norm.x };
+}
+
+struct vec2f vec2f_make(float x, float y)
+{
+  return (struct vec2f) { x, y };
+}
+
+struct vec2f biased_random_ball_velocity(int horizontal_direction)
+{
+  /* Chose a random horizontal direction when none specified */
+  if (horizontal_direction == 0)
+    horizontal_direction = ((rand() % 2) == 0) ? - 1 : 1;
+
+  /* Keep the angle to 45 degrees (or so) from the vertical divider */
+  const float random_offset_angle = (float)(rand() % 46);
+  const int direction_left = (horizontal_direction <= 0) ? 1 : 0;
+
+  /* Random vertical direction */
+  const int random_vertical = rand();
+  float chosen_random_angle;
+  if ((random_vertical % 2) == 0)
+  {
+    /* Up */
+    chosen_random_angle = direction_left ? (180.0f - random_offset_angle) : random_offset_angle;
+  }
+  else
+  {
+    /* Down */
+    chosen_random_angle = direction_left ? (180.0f + random_offset_angle) : -random_offset_angle;
+  }
+
+  struct vec2f random_direction = vec2f_make(
+    cos(degrees_to_radians(chosen_random_angle)),
+    sin(degrees_to_radians(chosen_random_angle))
+  );
+
+  /* Construct velocity vector */
+  return vec2f_scale(vec2f_normalize(random_direction), BALL_SPEED_PIXELS_PER_SECOND);
+}
+
+void set_ball_velocity(struct ball * p_ball, struct vec2f new_velocity)
+{
+  if (!p_ball)
+    return;
+
+  p_ball->velocity = new_velocity;
 }
 
 float flt_list_min(const float * p_float_list, size_t entries)
@@ -255,7 +310,7 @@ int main(void)
   SDL_GLContext * p_opengl_context = NULL;
 
   /* Initialize SDL subsystems */
-  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0)
+  if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_AUDIO) < 0)
   {
     fprintf(stderr, "\n[SDL] Could not initialize subsystems - Error: %s\n", SDL_GetError());
     return -1;
@@ -325,6 +380,21 @@ int main(void)
     return -1;
   }
 
+  /* Initialize audio player */
+  if (audio_player_initialize() == PONG_FALSE)
+  {
+    fprintf(stderr, "\n[Pong] Could not initialize the audio player");
+    return -1;
+  }
+
+  /* Register music and sound effects */
+  int sfx_pickup = audio_player_register_sound_effect("pickup.wav");
+  int r = audio_player_play_sound_effect(sfx_pickup);
+  printf("\nPlay success: %d", r);
+
+  /* Set random time seed */
+  srand(time(NULL));
+
   /* Gameloop timing */
   uint64_t fps_counter_last = SDL_GetPerformanceCounter();
   int frames_per_second = 0;
@@ -342,8 +412,6 @@ int main(void)
 
   /* Integration */
   double last_time_in_seconds = time_in_seconds();
-  const float PADDLE_PIXELS_PER_SECOND = 500.0f;
-  const float BALL_SPEED_PIXELS_PER_SECOND = 350.0f;
 
   /* Ball */
   const struct vec2f PLAYFIELD_CENTER = { WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT / 2.0f };
@@ -354,6 +422,9 @@ int main(void)
     BALL_SPEED_PIXELS_PER_SECOND,
     BALL_SPEED_PIXELS_PER_SECOND
   );
+
+  /* Randomize ball direction for the first spawn */
+  set_ball_velocity(&ball, biased_random_ball_velocity(0));
 
   /* Paddles */
   const struct vec2f PADDLE_DIMENSIONS = { 5, WINDOW_HEIGHT * 0.2f };
@@ -601,6 +672,7 @@ int main(void)
           if (!paddle_missed_ball)
           {
             /* TODO-GS: Compute direction based on where the ball hit the paddle */
+
             ball.velocity.x = ball.velocity.x + (2.0f * fabs(ball.velocity.x) * p_earliest_collider->surface_normal.x);
             ball.velocity.y = ball.velocity.y + (2.0f * fabs(ball.velocity.y) * p_earliest_collider->surface_normal.y);
           }
@@ -617,17 +689,15 @@ int main(void)
     {
       /* Left paddle scored - Right player is up next */
       score_paddle_left++;
+      set_ball_velocity(&ball, biased_random_ball_velocity(-1));
       ball.position = PLAYFIELD_CENTER;
-      ball.velocity.x = -BALL_SPEED_PIXELS_PER_SECOND;
-      ball.velocity.y = 0;
     }
     if (region_ball_integrated.max.x < 0)
     {
       /* Right paddle scored */
       score_paddle_right++;
+      set_ball_velocity(&ball, biased_random_ball_velocity(1));
       ball.position = PLAYFIELD_CENTER;
-      ball.velocity.x = BALL_SPEED_PIXELS_PER_SECOND;
-      ball.velocity.y = 0;
     }
 
     /* Clear scene */
@@ -736,6 +806,7 @@ int main(void)
 
   /* Cleanup */
   batcher_cleanup();
+  audio_player_cleanup();
   SDL_DestroyWindow(p_window);
   SDL_Quit();
 

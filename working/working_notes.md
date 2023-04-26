@@ -6,30 +6,30 @@ This document contains working notes throughout the completion of the project
   + Entities
     - Player VS Computer
     - Computer VS Computer
-    - Player VS Player
+    - [OK] Player VS Player
   + Movement
     - [OK] Capped vertical movement
 - Ball
   + [OK] Spawns in center of the playfield
-  + [OK] Initial velocity towards the player that lost the last round
-    but first time a random direction?
+  + [OK] Random initian velocity in terms of horizontal and vertical momentum
+  + [OK] Random vertical momentum towards the player that scored last
   + Bouncing
     - [OK] Bounces of the top and bottom playfield region
-    - Bounces of the paddle where the angle maybe depends on the contact angle
+    - [OK] Bounce of the paddles
+    - [  ] Bounde of the paddle based on the relative impact position -> game feel
 - Playfield
   + [OK] Vertical divider in the middle of the play field
 - Round
   + [OK] Counter over the player regions
 - Audio
-  + Menu interaction SFX
-  + Optionl music SFC
-  + Paddle ball hit SFX
-  + Score SFX
+  + Play music and audio effects in the menu
+  + Paddle sfc
+  + Ball sfx
+  + Score sfx
 - Scoring
-  + Score displayed per player
-  + Increment score when ball over opponents region
-  + Reset to center position and move toward the player that scored last
-  + Choose a random direction in some range but with the same, constant speed
+  + [OK] Score displayed per player
+  + [OK] Increment score when ball over opponents region
+  + [OK] Reset ball to center position when one player scored
 - Menu
   + Main menu
     + Play (Mode choice)
@@ -74,11 +74,6 @@ This document contains working notes throughout the completion of the project
   + How to make builds for different platforms?
   + How to test the game?
 
-## Collision detection and resolution
-- move paddles to position
-- integrate ball
-- resolve collision for all edges and paddles
-
 ## Code
 - Use a linter
 - Implement testing and development build flags - Through executable arguments?
@@ -90,7 +85,7 @@ This document contains working notes throughout the completion of the project
 - Handle all Todo's
 - Working and other un-necessary directories are removed
 - Documentation
-- Add all dependency reference in Makefile; source and headers
+- Cleanup Makefile, indicate all depenencies etc.
 
 ## Things to do for the next clean project
 - cleanup resources on error and clean exits alike even though the OS 
