@@ -16,7 +16,7 @@ pong_bool_te audio_player_initialize(void)
 {
 	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
 	{
-		fprintf(stderr, "\n[SDL2 Mixer] Could not initialize SDL2 mixel - Error: %s", Mix_GetError());
+		fprintf(stderr, "\n[SDL2 Mixer] Could not initialize SDL2 mixer - Error: %s", Mix_GetError());
 		return PONG_FALSE;
 	}
 

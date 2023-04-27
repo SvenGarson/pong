@@ -121,10 +121,8 @@ pong_bool_te window_context_initialize(void)
   }
 
   /* Register music and sound effects */
-  /*
   const int SFX_BALL_HIT = audio_player_register_sound_effect("paddle_hit.wav");
   const int SFX_SCORE  = audio_player_register_sound_effect("score.wav");
-  /*
 
 	/* Set random time seed */
   srand(time(NULL));

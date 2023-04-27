@@ -5,7 +5,7 @@ CC = gcc
 OBJS = source/*.c
 
 # Compiler flags
-COMPILER_FLAGS =
+COMPILER_FLAGS = 
 
 # Linker flags
 LINKER_FLAGS = -lm -lGL -lGLU -lSDL2 -lSDL2_image -lSDL2_mixer	
