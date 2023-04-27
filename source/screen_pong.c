@@ -3,10 +3,12 @@
 #include <screen_pong.h>
 #include <stdio.h>
 
+/* TODO-GS: Build an interface to not use static function of needed dependencies */
+#include <batcher.h>
+
 /* Function definitions */
 static void screen_initialize(void)
 {
-	printf("\nScreen - Pong - Init");
 }
 
 static void screen_integrate
@@ -19,12 +21,11 @@ static void screen_integrate
 
 static void screen_render(void)
 {
-	printf("\nScreen - Pong - Render");
+	batcher_text("Screen - Pong", 10, 590, 9 * 3);
 }
 
 static void screen_cleanup(void)
 {
-	printf("\nScreen - Pong - Cleanup");
 }
 
 struct screen screen_pong_make(void)

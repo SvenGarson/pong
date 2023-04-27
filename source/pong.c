@@ -4,7 +4,7 @@
 #include <screen_state_machine.h>
 
 /* Callbacks */
-void gameplay_tick_callback(double dt)
+pong_bool_te gameplay_tick_callback(double dt)
 {
   /*
       Tick the state machine for every game play tick and

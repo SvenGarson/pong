@@ -34,7 +34,7 @@ int audio_player_register_sound_effect(const char * p_sound_effect_filename)
 	}
 
 	/* Get the absolute path for the sound effect file */
-  static char absolute_sound_effect_path[MAX_PATH_LENGTH];
+  static char absolute_sound_effect_path[MAX_AUDIO_PATH_LENGTH];
   snprintf(
     absolute_sound_effect_path,
     MAX_AUDIO_PATH_LENGTH,

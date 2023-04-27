@@ -17,7 +17,7 @@ _DEPS = pong_bool.h text_renderer.h texture_loader.h batcher.h audio_player.h sc
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 # Compilation unit object files to build
-_OBJ = pong.o screen.o screen_main_menu.o screen_pong.o screen_state_machine.o window_context.o
+_OBJ = pong.o screen.o screen_main_menu.o screen_pong.o screen_state_machine.o window_context.o batcher.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 # Re-generate compilation unit object files when corresponding headers change
