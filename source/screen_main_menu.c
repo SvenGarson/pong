@@ -6,6 +6,7 @@
 /* Function definitions */
 static void screen_initialize(void)
 {
+	printf("\nScreen - Main menu - Init");
 }
 
 static void screen_integrate
@@ -18,10 +19,12 @@ static void screen_integrate
 
 static void screen_render(void)
 {
+	printf("\nScreen - Main menu - Render");
 }
 
 static void screen_cleanup(void)
 {
+	printf("\nScreen - Main menu - Cleanup");
 }
 
 struct screen screen_main_menu_make(void)

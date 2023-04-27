@@ -58,7 +58,7 @@ int audio_player_register_sound_effect(const char * p_sound_effect_filename)
   }
 
   /* Register the sound effect and return a handle to it */
-  const new_sound_effect_id = sound_effects_count++;
+  const int new_sound_effect_id = sound_effects_count++;
   sound_effects[new_sound_effect_id] = p_new_sound_effect;
   return new_sound_effect_id;
 }
@@ -73,6 +73,7 @@ int audio_player_play_sound_effect(int sound_effect_id)
 	if (Mix_PlayChannel(-1, sound_effects[sound_effect_id], 0) < 0)
 	{
 		fprintf(
+			stderr,
 			"\n[Audio player] Could not player sound effect with id: %d - Error: %s",
 			sound_effect_id,
 			Mix_GetError()

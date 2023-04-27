@@ -9,6 +9,8 @@
 /* Private state */
 static pong_bool_te screen_change_requested = PONG_FALSE;
 static enum screen_type latest_screen_type_requested;
+struct screen active_screen;
+struct screen * p_screen_type_instance_list;
 
 /* Callbacks */
 static void screen_change_request(enum screen_type requested_screen_type)
@@ -24,61 +26,66 @@ pong_bool_te screen_type_is_valid(enum screen_type screen_type)
 }
 
 /* Function definitions */
-void screen_state_machine_run(enum screen_type initial_screen_type)
+pong_bool_te screen_state_machine_initialize(enum screen_type initial_screen_type)
 {
+  /* Prepare the state machine and report setup success */
   /* Check initial screen type */
   if (!screen_type_is_valid(initial_screen_type) || initial_screen_type == SCREEN_TYPE_QUIT)
-    return;
+    return PONG_FALSE;
 
   /* Specify screen type to screen instance mapping */
-  struct screen * p_screen_type_instance_list = malloc(sizeof(struct screen) * SCREEN_TYPE_COUNT);
+  p_screen_type_instance_list = malloc(sizeof(struct screen) * SCREEN_TYPE_COUNT);
   if (p_screen_type_instance_list == NULL)
   {
     fprintf(stderr, "\n[Screen state machine] Could not allocate space for screen type instances");
-    return;
+    return PONG_FALSE;
   }
 
   p_screen_type_instance_list[SCREEN_TYPE_MAIN_MENU] = screen_main_menu_make();
   p_screen_type_instance_list[SCREEN_TYPE_PONG] = screen_pong_make();
 
-	/* Kick of with the provided screen and initialize it */
-	struct screen active_screen = p_screen_type_instance_list[initial_screen_type];
+  /* Kick of with the provided screen and initialize it */
+  active_screen = p_screen_type_instance_list[initial_screen_type];
   active_screen.p_initialize();
 
-	/* Execute screen callback cycle until none requested */
-	while(1)
+  return PONG_TRUE;
+}
+
+pong_bool_te screen_state_machine_tick(void)
+{
+  /* Integrate and determine whether another screen is requested */
+  active_screen.p_integrate(0.016, screen_change_request);
+
+  /* Render the active screen */
+  active_screen.p_render();
+
+  /* Contine when not screen change is was requested */
+  if (!screen_change_requested)
+    return PONG_TRUE;
+
+  /* Reset request mechanism */
+  screen_change_requested = PONG_FALSE;
+
+  /* Cleanup the active screen */
+  active_screen.p_cleanup();
+
+  /* Requested screen type is invalid */
+  if (!screen_type_is_valid(latest_screen_type_requested))
   {
-    /* Integrate and determine whether another screen is requested */
-    /* TODO-GS: Pass the actual SDL dt in here */
-    active_screen.p_integrate(0.016, screen_change_request);
-
-    /* Render the active screen */
-    active_screen.p_render();
-
-    /* Change screens if necessary */
-    if (screen_change_requested)
-    {
-      /* Reset request mechanism */
-      screen_change_requested = PONG_FALSE;
-
-
-      /* Cleanup the active screen */
-      active_screen.p_cleanup();
-
-      /* Detect when to exit the state machine */
-      if (
-        !screen_type_is_valid(latest_screen_type_requested) ||
-        latest_screen_type_requested == SCREEN_TYPE_QUIT
-      )
-      {
-        /* Stop processing screens */
-      	break;
-      }
-
-      /* Switch to the new screen type and initialize before usage */
-      /* TODO-GS: Get an instance from the register map + range check */
-      active_screen = p_screen_type_instance_list[latest_screen_type_requested];
-      active_screen.p_initialize();
-    }
+    fprintf(stderr, "\n[Screen state machine] Invalid screen type requested");
+    return PONG_FALSE;
   }
+
+  if (latest_screen_type_requested == SCREEN_TYPE_QUIT)
+  {
+    /* Requested to close the screen state machine */
+    return PONG_FALSE;
+  }
+
+  /* Switch to the new screen type and initialize before usage */
+  active_screen = p_screen_type_instance_list[latest_screen_type_requested];
+  active_screen.p_initialize();
+
+  /* Keep ticking the state machine */
+  return PONG_TRUE;
 }

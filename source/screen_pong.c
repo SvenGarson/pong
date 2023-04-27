@@ -1,11 +1,12 @@
 /* Includes */
+#include <screen.h>
 #include <screen_pong.h>
-#include <screen_main_menu.h>
 #include <stdio.h>
 
 /* Function definitions */
 static void screen_initialize(void)
 {
+	printf("\nScreen - Pong - Init");
 }
 
 static void screen_integrate
@@ -18,10 +19,12 @@ static void screen_integrate
 
 static void screen_render(void)
 {
+	printf("\nScreen - Pong - Render");
 }
 
 static void screen_cleanup(void)
 {
+	printf("\nScreen - Pong - Cleanup");
 }
 
 struct screen screen_pong_make(void)
