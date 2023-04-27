@@ -36,19 +36,6 @@ struct vec2f current_texcoords_v2 = { 0.0f, 0.0f };
 GLuint text_glyph_texture_handle = 0x00;
 
 /* Private batcher helpers */
-static void batcher_color(
-  unsigned char red,
-  unsigned char green,
-  unsigned char blue,
-  unsigned char alpha
-)
-{
-  current_color.red = red;
-  current_color.green = green;
-  current_color.blue = blue;
-  current_color.alpha = alpha;
-}
-
 static void batcher_texture_handle(GLuint texture_handle)
 {
   current_texture_handle = texture_handle;
@@ -133,6 +120,20 @@ pong_bool_te batcher_initialize(void)
 void batcher_cleanup(void)
 {
   text_renderer_text_cleanup();
+}
+
+void batcher_color
+(
+  unsigned char red,
+  unsigned char green,
+  unsigned char blue,
+  unsigned char alpha
+)
+{
+  current_color.red = red;
+  current_color.green = green;
+  current_color.blue = blue;
+  current_color.alpha = alpha;
 }
 
 void batcher_text

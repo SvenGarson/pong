@@ -7,6 +7,13 @@
 /* Batcher function definitions */
 pong_bool_te batcher_initialize(void);
 void batcher_cleanup(void);
+void batcher_color
+(
+  unsigned char red,
+  unsigned char green,
+  unsigned char blue,
+  unsigned char alpha
+);
 void batcher_text
 (
   const char * p_text,

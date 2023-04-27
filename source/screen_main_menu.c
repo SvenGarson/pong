@@ -3,9 +3,6 @@
 #include <screen_pong.h>
 #include <stdio.h>
 
-/* TODO-GS: Build an interface to not use static function of needed dependencies */
-#include <batcher.h>
-
 /* Function definitions */
 static void screen_initialize(void)
 {

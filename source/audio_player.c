@@ -14,12 +14,14 @@ Mix_Chunk * sound_effects[AUDIO_PLAYER_MAX_SOUND_EFFECTS];
 /* Function definitions */
 pong_bool_te audio_player_initialize(void)
 {
+	/* Initialize audio library */
 	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
 	{
 		fprintf(stderr, "\n[SDL2 Mixer] Could not initialize SDL2 mixer - Error: %s", Mix_GetError());
 		return PONG_FALSE;
 	}
 
+	/* Success */
 	return PONG_TRUE;
 }
 

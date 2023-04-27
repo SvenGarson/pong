@@ -6,6 +6,8 @@
 #include <audio_player.h>
 #include <window_context.h>
 #include <time.h>
+#include <gameplay_dependencies.h>
+#include <stdint.h>
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
@@ -171,22 +173,53 @@ pong_bool_te window_context_run(window_context_gameplay_tick_tf p_callback_tick)
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
-      switch(event.type)
-      {
-        case SDL_QUIT:
-          window_close_requested = PONG_TRUE;
-          break;
-        case SDL_KEYDOWN:
-          /* Process key presses */
-          switch(event.key.keysym.sym)
-          {
-            case SDLK_ESCAPE:
-              window_close_requested = PONG_TRUE;
-              break;
-          }
-          break;
-      }
+      if (event.type == SDL_QUIT)
+        window_close_requested = PONG_TRUE;
     }
+
+    /* Map input state */
+    const int KEY_STATE_NONE = 1;
+    const int KEY_STATE_PRESSED = 2;
+    const int KEY_STATE_HELD = 3;
+    const int KEY_STATE_RELEASED = 4;
+    static int current_key_state = KEY_STATE_NONE;
+
+    /* Set scancode to look for */
+    const SDL_Scancode key_code = SDL_SCANCODE_ESCAPE;
+
+    /* Get state snapshot */
+    int keyboard_key_count;
+    const uint8_t * p_keyboard_state = SDL_GetKeyboardState(&keyboard_key_count);
+
+    /* Determine intermediate states */
+    const int key_currently_pressed = p_keyboard_state[key_code];
+    if (key_currently_pressed)
+    {
+      /* Pressed */
+      if (current_key_state == KEY_STATE_NONE)
+          current_key_state = KEY_STATE_PRESSED;
+      else if (current_key_state == KEY_STATE_PRESSED)
+        current_key_state = KEY_STATE_HELD;
+    }
+    else
+    {
+      /* Released */
+      if (current_key_state == KEY_STATE_PRESSED || current_key_state == KEY_STATE_HELD)
+        current_key_state = KEY_STATE_RELEASED;
+      else if (current_key_state == KEY_STATE_RELEASED)
+        current_key_state = KEY_STATE_NONE;
+    }
+
+    /* Check intermediate states */
+    if (current_key_state == KEY_STATE_PRESSED)
+      printf("\nPressed");
+    else if (current_key_state == KEY_STATE_RELEASED)
+      printf("\nReleased");
+    else if (current_key_state == KEY_STATE_HELD)
+      printf("\nHeld");
+    else if (current_key_state == KEY_STATE_NONE)
+      printf("\nNone");
+    fflush(stdout);
 
     /* Tick the pong game */
 		const pong_bool_te keep_gameloop_alive = p_callback_tick(dts);
