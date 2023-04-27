@@ -21,5 +21,6 @@ void batcher_quadf
   float max_x,
   float max_y
 );
+void batcher_render(void);
 
 #endif

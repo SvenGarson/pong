@@ -18,8 +18,8 @@ static const int WINDOW_CONTEXT_HEIGHT = 600;
 
 /* Private state */
 SDL_Window * p_window = NULL;
- SDL_Surface * p_surface = NULL;
- SDL_GLContext * p_opengl_context = NULL;
+SDL_Surface * p_surface = NULL;
+SDL_GLContext * p_opengl_context = NULL;
 
 /* Helper functions */
 static void log_opengl_error(const char * p_tag)
@@ -121,8 +121,10 @@ pong_bool_te window_context_initialize(void)
   }
 
   /* Register music and sound effects */
+  /*
   const int SFX_BALL_HIT = audio_player_register_sound_effect("paddle_hit.wav");
   const int SFX_SCORE  = audio_player_register_sound_effect("score.wav");
+  /*
 
 	/* Set random time seed */
   srand(time(NULL));
