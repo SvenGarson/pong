@@ -1,9 +1,25 @@
-#include <screen_state_machine.h>
-#include <screen_main_menu.h>
+/* Includes */
+#include <window_context.h>
+#include <stdio.h>
 
+/* Callbacks */
+void gameplay_tick_callback(double dt)
+{
+  printf("\nTicked at %f", dt);
+}
+
+/* Entry point */
 int main(void)
 {
-  screen_state_machine_run(screen_main_menu_make());
+  /* Create usable window and resources */
+  if (window_context_initialize() == PONG_FALSE)
+  {
+    fprintf(stderr, "\n[Pong] Could not create window context");
+    return -1;
+  }
+
+  /* Run the loop and start ticking the callback */
+  window_context_run(gameplay_tick_callback);
 
   /* Return to OS successfully */
   return 0;

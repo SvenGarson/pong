@@ -5,6 +5,6 @@
 #include <screen.h>
 
 /* Function prototypes */
-void screen_state_machine_run(struct screen initial_screen);
+void screen_state_machine_run(enum screen_type initial_screen_type);
 
 #endif

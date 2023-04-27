@@ -13,7 +13,7 @@ LDIR =../lib
 LIBS=-lm -lGL -lGLU -lSDL2 -lSDL2_image -lSDL2_mixer
 
 # Header that source files depend on TODO-GS: Add all dependencies
-_DEPS = pong_bool.h text_renderer.h texture_loader.h batcher.h audio_player.h screen.h screen_main_menu.h screen_pong.h screen_state_machine.h
+_DEPS = pong_bool.h text_renderer.h texture_loader.h batcher.h audio_player.h screen.h screen_main_menu.h screen_pong.h screen_state_machine.h window_context.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 # Compilation unit object files to build

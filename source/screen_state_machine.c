@@ -24,8 +24,12 @@ pong_bool_te screen_type_is_valid(enum screen_type screen_type)
 }
 
 /* Function definitions */
-void screen_state_machine_run(struct screen initial_screen)
+void screen_state_machine_run(enum screen_type initial_screen_type)
 {
+  /* Check initial screen type */
+  if (!screen_type_is_valid(initial_screen_type) || initial_screen_type == SCREEN_TYPE_QUIT)
+    return;
+
   /* Specify screen type to screen instance mapping */
   struct screen * p_screen_type_instance_list = malloc(sizeof(struct screen) * SCREEN_TYPE_COUNT);
   if (p_screen_type_instance_list == NULL)
@@ -38,7 +42,7 @@ void screen_state_machine_run(struct screen initial_screen)
   p_screen_type_instance_list[SCREEN_TYPE_PONG] = screen_pong_make();
 
 	/* Kick of with the provided screen and initialize it */
-	struct screen active_screen = initial_screen;
+	struct screen active_screen = p_screen_type_instance_list[initial_screen_type];
   active_screen.p_initialize();
 
 	/* Execute screen callback cycle until none requested */
