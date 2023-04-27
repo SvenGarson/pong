@@ -6,12 +6,17 @@ enum screen_type {
 	SCREEN_TYPE_MAIN_MENU,
 	SCREEN_TYPE_OPTIONS,
 	SCREEN_TYPE_PONG,
-	SCREEN_TYPE_NONE
+	SCREEN_TYPE_QUIT, /* To signal quitting the screen state machine */
+	SCREEN_TYPE_COUNT
 };
 
 /* Screen callback types */
+typedef void (* screen_callback_change_request_tf)(enum screen_type requested_screen_type);
 typedef void (* screen_callback_initialize_tf)(void);
-typedef struct screen (* screen_callback_integrate_tf)(double dt);
+typedef void (* screen_callback_integrate_tf)
+(
+	double dt, screen_callback_change_request_tf change_request
+);
 typedef void (* screen_callback_render_tf)(void);
 typedef void (* screen_callback_cleanup_tf)(void);
 

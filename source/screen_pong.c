@@ -6,24 +6,22 @@
 /* Function definitions */
 static void screen_initialize(void)
 {
-	printf("\nPong init");
 }
 
-static struct screen screen_integrate(double dt)
+static void screen_integrate
+(
+	double dt,
+	screen_callback_change_request_tf change_request
+)
 {
-	printf("\nPong integrate: %f", dt);
-
-	return screen_main_menu_make();
 }
 
 static void screen_render(void)
 {
-	printf("\nPong render");
 }
 
 static void screen_cleanup(void)
 {
-	printf("\nPong cleanup");
 }
 
 struct screen screen_pong_make(void)
