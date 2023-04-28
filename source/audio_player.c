@@ -4,35 +4,18 @@
 #include <SDL2/SDL.h>
 
 /* Defines */
-#define AUDIO_PLAYER_MAX_SOUND_EFFECTS (32)
 #define MAX_AUDIO_PATH_LENGTH (1024)
 
 /* Private audio player state */
-int sound_effects_count = 0;
-Mix_Chunk * sound_effects[AUDIO_PLAYER_MAX_SOUND_EFFECTS];
+Mix_Chunk ** p_sound_effects;
 
-/* Function definitions */
-pong_bool_te audio_player_initialize(void)
+/* Private helper functions */
+static void audio_player_register_sound_effect
+(
+	enum audio_player_sfx_type sfx_type,
+	const char * p_sound_effect_filename
+)
 {
-	/* Initialize audio library */
-	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
-	{
-		fprintf(stderr, "\n[SDL2 Mixer] Could not initialize SDL2 mixer - Error: %s", Mix_GetError());
-		return PONG_FALSE;
-	}
-
-	/* Success */
-	return PONG_TRUE;
-}
-
-int audio_player_register_sound_effect(const char * p_sound_effect_filename)
-{
-	if (sound_effects_count >= AUDIO_PLAYER_MAX_SOUND_EFFECTS)
-	{
-		fprintf(stderr, "\n[Audio player] Reached sound effect capacity at index : %d", sound_effects_count);
-		return -1;
-	}
-
 	/* Get the absolute path for the sound effect file */
   static char absolute_sound_effect_path[MAX_AUDIO_PATH_LENGTH];
   snprintf(
@@ -45,54 +28,78 @@ int audio_player_register_sound_effect(const char * p_sound_effect_filename)
   );
 
   /* Attempt to load the sound effect */
-  Mix_Chunk * p_new_sound_effect = Mix_LoadWAV(absolute_sound_effect_path);
-  if (p_new_sound_effect == NULL)
+  p_sound_effects[sfx_type] = Mix_LoadWAV(absolute_sound_effect_path);
+  if (p_sound_effects[sfx_type] == NULL)
   {
   	fprintf(
   		stderr, 
-  		"\n[Audio player] Could not resolve sound effect: %s in directory: %s",
+  		"\n[Audio player] Could not register sound effect: %s in directory: %s",
   		p_sound_effect_filename,
   		absolute_sound_effect_path
   	);
-  	return -1;
   }
-
-  /* Register the sound effect and return a handle to it */
-  const int new_sound_effect_id = sound_effects_count++;
-  sound_effects[new_sound_effect_id] = p_new_sound_effect;
-  return new_sound_effect_id;
 }
 
-int audio_player_play_sound_effect(int sound_effect_id)
+/* Function definitions */
+pong_bool_te audio_player_initialize(void)
 {
-	if (sound_effect_id == -1)
+	/* Initialize audio library */
+	if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
 	{
-		fprintf(stderr, "\n[Audio player] Cannot play sound effect from invalid sound effect id: %d", sound_effect_id);
+		fprintf(stderr, "\n[Audio player] Could not initialize SDL2 mixer - Error: %s", Mix_GetError());
+		return PONG_FALSE;
 	}
 
-	if (Mix_PlayChannel(-1, sound_effects[sound_effect_id], 0) < 0)
+	/* Allocate a list for registering sounds */
+	p_sound_effects = malloc(sizeof(Mix_Chunk *) * AUDIO_PLAYER_SFX_TYPE_COUNT);
+	if (p_sound_effects == NULL)
+	{
+		fprintf(stderr, "\n[Audio player] Could not allocate storage for sound effect pointers");
+		return PONG_FALSE;
+	}
+
+	/* Initialize sound effects pointers so we know which ones are registered at runtime */
+	for (int sfx_index = 0; sfx_index < AUDIO_PLAYER_SFX_TYPE_COUNT; sfx_index++)
+	{
+		p_sound_effects[sfx_index] = NULL;
+	}
+
+	/* Register music and sound effects */
+  audio_player_register_sound_effect(AUDIO_PLAYER_SFX_TYPE_PADDLE_HIT, "paddle_hit.wav");
+  audio_player_register_sound_effect(AUDIO_PLAYER_SFX_TYPE_SCORE, "score.wav");
+
+	/* Success */
+	return PONG_TRUE;
+}
+
+pong_bool_te audio_player_play_sound_effect(enum audio_player_sfx_type sfx_type)
+{
+	if (sfx_type < 0 || sfx_type >= AUDIO_PLAYER_SFX_TYPE_COUNT)
+		return PONG_FALSE;
+
+	if (Mix_PlayChannel(-1, p_sound_effects[sfx_type], 0) < 0)
 	{
 		fprintf(
 			stderr,
 			"\n[Audio player] Could not player sound effect with id: %d - Error: %s",
-			sound_effect_id,
+			sfx_type,
 			Mix_GetError()
 		);
-		return 0;
+		return PONG_FALSE;
 	}
 
-	return 1;
+	return PONG_TRUE;
 }
 
 void audio_player_cleanup(void)
 {
 	/* Cleanup loaded sound effect and music resources */
-	for (int sfx_index = 0; sfx_index < sound_effects_count; sfx_index++)
+	for (int sfx_index = 0; sfx_index < AUDIO_PLAYER_SFX_TYPE_COUNT; sfx_index++)
 	{
-		free(sound_effects[sfx_index]);
-		sound_effects[sfx_index] = NULL;
+		free(p_sound_effects[sfx_index]);
+		p_sound_effects[sfx_index] = NULL;
 	}
-	sound_effects_count = 0;
+	free(p_sound_effects);
 
 	/* Cleanup subsystem */
 	Mix_Quit();

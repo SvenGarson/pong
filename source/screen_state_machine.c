@@ -51,13 +51,19 @@ pong_bool_te screen_state_machine_initialize(enum screen_type initial_screen_typ
   return PONG_TRUE;
 }
 
-pong_bool_te screen_state_machine_tick(void)
+pong_bool_te screen_state_machine_tick
+(
+  double dts,
+  const struct gameplay_dependencies_input * p_input,
+  const struct gameplay_dependencies_batcher * p_batcher,
+  const struct gameplay_dependencies_audio * p_audio
+)
 {
   /* Integrate and determine whether another screen is requested */
-  active_screen.p_integrate(0.016, screen_change_request);
+  active_screen.p_integrate(dts, p_input, p_batcher, p_audio, screen_change_request);
 
   /* Render the active screen */
-  active_screen.p_render();
+  active_screen.p_render(p_batcher);
 
   /* Contine when not screen change is was requested */
   if (!screen_change_requested)

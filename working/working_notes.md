@@ -34,7 +34,7 @@ This document contains working notes throughout the completion of the project
     + Play
     + Options
     + Quit to desktop
-  + Game pause
+  + Game paused
     + Options
     + Back to main menu
     + Restart and whatnot

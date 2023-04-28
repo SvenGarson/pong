@@ -2,15 +2,22 @@
 #include <window_context.h>
 #include <stdio.h>
 #include <screen_state_machine.h>
+#include <gameplay_dependencies.h>
 
 /* Callbacks */
-pong_bool_te gameplay_tick_callback(double dt)
+pong_bool_te gameplay_tick_callback
+(
+  double dts,
+  const struct gameplay_dependencies_input * p_input,
+  const struct gameplay_dependencies_batcher * p_batcher,
+  const struct gameplay_dependencies_audio * p_audio
+)
 {
   /*
       Tick the state machine for every game play tick and
       quit the gameloop when the state machine is done
   */
-  return screen_state_machine_tick();
+  return screen_state_machine_tick(dts, p_input, p_batcher, p_audio);
 }
 
 /* Entry point */

@@ -8,6 +8,7 @@
 #include <time.h>
 #include <stdint.h>
 #include <input_mapper.h>
+#include <gameplay_dependencies.h>
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
@@ -42,6 +43,27 @@ static void log_opengl_error(const char * p_tag)
 static double time_in_seconds(void)
 {
   return (double)SDL_GetPerformanceCounter() / (double)SDL_GetPerformanceFrequency();
+}
+
+/* Input mapper instance wrappers */
+pong_bool_te input_mapper_none_wrapper(enum input_mapper_key_type custom_key_type)
+{
+  return input_mapper_custom_key_state_none(&input_mapper, custom_key_type);
+}
+
+pong_bool_te input_mapper_pressed_wrapper(enum input_mapper_key_type custom_key_type)
+{
+  return input_mapper_custom_key_state_pressed(&input_mapper, custom_key_type);
+}
+
+pong_bool_te input_mapper_held_wrapper(enum input_mapper_key_type custom_key_type)
+{
+  return input_mapper_custom_key_state_held(&input_mapper, custom_key_type);
+}
+
+pong_bool_te input_mapper_released_wrapper(enum input_mapper_key_type custom_key_type)
+{
+  return input_mapper_custom_key_state_released(&input_mapper, custom_key_type);
 }
 
 /* Function prototypes */
@@ -130,10 +152,6 @@ pong_bool_te window_context_initialize(void)
     return PONG_FALSE;
   }
 
-  /* Register music and sound effects */
-  const int SFX_BALL_HIT = audio_player_register_sound_effect("paddle_hit.wav");
-  const int SFX_SCORE  = audio_player_register_sound_effect("score.wav");
-
 	/* Set random time seed */
   srand(time(NULL));
 
@@ -193,8 +211,28 @@ pong_bool_te window_context_run(window_context_gameplay_tick_tf p_callback_tick)
     if (input_mapper_custom_key_state_pressed(&input_mapper, INPUT_MAPPER_KEY_TYPE_QUIT_APPLICATION))
       window_close_requested = PONG_TRUE;
 
+    /* Package gameplay engine dependencies for screen state machine */
+    struct gameplay_dependencies_batcher dependency_batcher;
+    dependency_batcher.color = batcher_color;
+    dependency_batcher.text = batcher_text;
+    dependency_batcher.quadf = batcher_quadf;
+
+    struct gameplay_dependencies_audio dependency_audio;
+    dependency_audio.play_sound_effect = audio_player_play_sound_effect;
+
+    struct gameplay_dependencies_input dependency_input;
+    dependency_input.key_none = input_mapper_none_wrapper;
+    dependency_input.key_pressed = input_mapper_pressed_wrapper;
+    dependency_input.key_held = input_mapper_held_wrapper;
+    dependency_input.key_released = input_mapper_released_wrapper;
+
     /* Tick the pong game */
-		const pong_bool_te keep_gameloop_alive = p_callback_tick(dts);
+		const pong_bool_te keep_gameloop_alive = p_callback_tick(
+      dts,
+      &dependency_input,
+      &dependency_batcher,
+      &dependency_audio
+    );
     if (!keep_gameloop_alive)
       break;
 

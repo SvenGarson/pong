@@ -2,8 +2,10 @@
 #define GAMEPLAY_DEPENDENCIES
 
 /* Includes */
-#include <batcher.h>
 #include <pong_bool.h>
+#include <batcher.h>
+#include <audio_player.h>
+#include <input_mapper.h>
 
 /* Datatypes */
 struct gameplay_dependencies_batcher {
@@ -13,28 +15,14 @@ struct gameplay_dependencies_batcher {
 };
 
 struct gameplay_dependencies_audio {
-	/* Sound effect handles */
-	int SFX_BALL_HIT;
-	int SFX_SCORED;
-	/* Interface functions */
-	int (* play_sound_effect)(int sound_effect_id);
+	pong_bool_te (* play_sound_effect)(enum audio_player_sfx_type sfx_type);
 };
 
-/*
-		- key states
-			+ none
-			+ pressed
-			+ held
-			+ released
-
-		- logic
-			- key down
-				+ [none, released] -> pressed
-			- key up
-				+ [pressed] -> released
-*/
 struct gameplay_dependencies_input {
-
+	pong_bool_te (* key_none)(enum input_mapper_key_type custom_key_type);
+	pong_bool_te (* key_pressed)(enum input_mapper_key_type custom_key_type);
+	pong_bool_te (* key_held)(enum input_mapper_key_type custom_key_type);
+	pong_bool_te (* key_released)(enum input_mapper_key_type custom_key_type);
 };
 
 #endif
