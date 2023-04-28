@@ -25,4 +25,9 @@ struct gameplay_dependencies_input {
 	pong_bool_te (* key_released)(enum input_mapper_key_type custom_key_type);
 };
 
+struct gameplay_dependencies_windowing {
+	int window_width;
+	int window_height;
+};
+
 #endif

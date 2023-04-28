@@ -6,7 +6,10 @@
 
 
 /* Function definitions */
-static void screen_initialize(void)
+static void screen_initialize
+(
+	const struct gameplay_dependencies_windowing * p_windowing
+)
 {
 }
 
@@ -16,15 +19,17 @@ static void screen_integrate
 	const struct gameplay_dependencies_input * p_input,
   const struct gameplay_dependencies_batcher * p_batcher,
   const struct gameplay_dependencies_audio * p_audio,
+  const struct gameplay_dependencies_windowing * p_windowing,
 	screen_callback_change_request_tf change_request
 )
 {
-	/* Change screens */
-	if (p_input->key_pressed(INPUT_MAPPER_KEY_TYPE_LEFT_PADDLE_DOWN))
-		change_request(SCREEN_TYPE_PONG);
 }
 
-static void screen_render(const struct gameplay_dependencies_batcher * p_batcher)
+static void screen_render
+(
+	const struct gameplay_dependencies_batcher * p_batcher,
+	const struct gameplay_dependencies_windowing * p_windowing
+)
 {
 	p_batcher->color(255, 0, 0, 255);
 	p_batcher->text("Screen - Main menu", 10, 590, 9 * 3);

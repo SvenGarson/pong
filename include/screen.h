@@ -15,16 +15,24 @@ enum screen_type {
 
 /* Screen callback types */
 typedef void (* screen_callback_change_request_tf)(enum screen_type requested_screen_type);
-typedef void (* screen_callback_initialize_tf)(void);
+typedef void (* screen_callback_initialize_tf)
+(
+	const struct gameplay_dependencies_windowing * p_windowing
+);
 typedef void (* screen_callback_integrate_tf)
 (
 	double dt,
 	const struct gameplay_dependencies_input * p_input,
   const struct gameplay_dependencies_batcher * p_batcher,
   const struct gameplay_dependencies_audio * p_audio,
+  const struct gameplay_dependencies_windowing * p_windowing,
 	screen_callback_change_request_tf change_request
 );
-typedef void (* screen_callback_render_tf)(const struct gameplay_dependencies_batcher * p_batcher);
+typedef void (* screen_callback_render_tf)
+(
+	const struct gameplay_dependencies_batcher * p_batcher,
+	const struct gameplay_dependencies_windowing * p_windowing
+);
 typedef void (* screen_callback_cleanup_tf)(void);
 
 /* Datatypes */

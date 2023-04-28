@@ -26,7 +26,11 @@ pong_bool_te screen_type_is_valid(enum screen_type screen_type)
 }
 
 /* Function definitions */
-pong_bool_te screen_state_machine_initialize(enum screen_type initial_screen_type)
+pong_bool_te screen_state_machine_initialize
+(
+  enum screen_type initial_screen_type,
+  const struct gameplay_dependencies_windowing * p_windowing
+)
 {
   /* Prepare the state machine and report setup success */
   /* Check initial screen type */
@@ -46,7 +50,7 @@ pong_bool_te screen_state_machine_initialize(enum screen_type initial_screen_typ
 
   /* Kick of with the provided screen and initialize it */
   active_screen = p_screen_type_instance_list[initial_screen_type];
-  active_screen.p_initialize();
+  active_screen.p_initialize(p_windowing);
 
   return PONG_TRUE;
 }
@@ -56,14 +60,15 @@ pong_bool_te screen_state_machine_tick
   double dts,
   const struct gameplay_dependencies_input * p_input,
   const struct gameplay_dependencies_batcher * p_batcher,
-  const struct gameplay_dependencies_audio * p_audio
+  const struct gameplay_dependencies_audio * p_audio,
+  const struct gameplay_dependencies_windowing * p_windowing
 )
 {
   /* Integrate and determine whether another screen is requested */
-  active_screen.p_integrate(dts, p_input, p_batcher, p_audio, screen_change_request);
+  active_screen.p_integrate(dts, p_input, p_batcher, p_audio, p_windowing, screen_change_request);
 
   /* Render the active screen */
-  active_screen.p_render(p_batcher);
+  active_screen.p_render(p_batcher, p_windowing);
 
   /* Contine when not screen change is was requested */
   if (!screen_change_requested)
@@ -90,7 +95,7 @@ pong_bool_te screen_state_machine_tick
 
   /* Switch to the new screen type and initialize before usage */
   active_screen = p_screen_type_instance_list[latest_screen_type_requested];
-  active_screen.p_initialize();
+  active_screen.p_initialize(p_windowing);
 
   /* Keep ticking the state machine */
   return PONG_TRUE;

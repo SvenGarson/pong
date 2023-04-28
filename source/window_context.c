@@ -24,6 +24,10 @@ static SDL_Window * p_window = NULL;
 static SDL_Surface * p_surface = NULL;
 static SDL_GLContext * p_opengl_context = NULL;
 static struct input_mapper_instance input_mapper;
+struct gameplay_dependencies_batcher dependency_batcher;
+struct gameplay_dependencies_audio dependency_audio;
+struct gameplay_dependencies_input dependency_input;
+struct gameplay_dependencies_windowing dependency_windowing;
 
 /* Helper functions */
 static void log_opengl_error(const char * p_tag)
@@ -67,7 +71,7 @@ pong_bool_te input_mapper_released_wrapper(enum input_mapper_key_type custom_key
 }
 
 /* Function prototypes */
-pong_bool_te window_context_initialize(void)
+pong_bool_te window_context_initialize(window_context_initialize_tf p_callback_initialize)
 {
 	/* Initialize SDL2 */
 	p_window = NULL;
@@ -155,8 +159,26 @@ pong_bool_te window_context_initialize(void)
 	/* Set random time seed */
   srand(time(NULL));
 
-	/* Success */
-	return PONG_TRUE;
+  /* Prepare gameloop dependencies */
+  /* Batcher for rendering */
+  dependency_batcher.color = batcher_color;
+  dependency_batcher.text = batcher_text;
+  dependency_batcher.quadf = batcher_quadf;
+
+  /* Audio player */
+  dependency_audio.play_sound_effect = audio_player_play_sound_effect;
+
+  /* Input */
+  dependency_input.key_none = input_mapper_none_wrapper;
+  dependency_input.key_pressed = input_mapper_pressed_wrapper;
+  dependency_input.key_held = input_mapper_held_wrapper;
+  dependency_input.key_released = input_mapper_released_wrapper;
+
+  /* Windowing related */
+  SDL_GetWindowSize(p_window, &dependency_windowing.window_width, &dependency_windowing.window_height);
+
+  /* Success governed by the external initialization callback */
+  return p_callback_initialize(&dependency_windowing);
 }
 
 pong_bool_te window_context_run(window_context_gameplay_tick_tf p_callback_tick)
@@ -211,27 +233,13 @@ pong_bool_te window_context_run(window_context_gameplay_tick_tf p_callback_tick)
     if (input_mapper_custom_key_state_pressed(&input_mapper, INPUT_MAPPER_KEY_TYPE_QUIT_APPLICATION))
       window_close_requested = PONG_TRUE;
 
-    /* Package gameplay engine dependencies for screen state machine */
-    struct gameplay_dependencies_batcher dependency_batcher;
-    dependency_batcher.color = batcher_color;
-    dependency_batcher.text = batcher_text;
-    dependency_batcher.quadf = batcher_quadf;
-
-    struct gameplay_dependencies_audio dependency_audio;
-    dependency_audio.play_sound_effect = audio_player_play_sound_effect;
-
-    struct gameplay_dependencies_input dependency_input;
-    dependency_input.key_none = input_mapper_none_wrapper;
-    dependency_input.key_pressed = input_mapper_pressed_wrapper;
-    dependency_input.key_held = input_mapper_held_wrapper;
-    dependency_input.key_released = input_mapper_released_wrapper;
-
     /* Tick the pong game */
 		const pong_bool_te keep_gameloop_alive = p_callback_tick(
       dts,
       &dependency_input,
       &dependency_batcher,
-      &dependency_audio
+      &dependency_audio,
+      &dependency_windowing
     );
     if (!keep_gameloop_alive)
       break;
