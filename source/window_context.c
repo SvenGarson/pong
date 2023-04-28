@@ -6,8 +6,8 @@
 #include <audio_player.h>
 #include <window_context.h>
 #include <time.h>
-#include <gameplay_dependencies.h>
 #include <stdint.h>
+#include <input_mapper.h>
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
@@ -19,9 +19,10 @@ static const int WINDOW_CONTEXT_WIDTH = 800;
 static const int WINDOW_CONTEXT_HEIGHT = 600;
 
 /* Private state */
-SDL_Window * p_window = NULL;
-SDL_Surface * p_surface = NULL;
-SDL_GLContext * p_opengl_context = NULL;
+static SDL_Window * p_window = NULL;
+static SDL_Surface * p_surface = NULL;
+static SDL_GLContext * p_opengl_context = NULL;
+static struct input_mapper_instance input_mapper;
 
 /* Helper functions */
 static void log_opengl_error(const char * p_tag)
@@ -122,6 +123,13 @@ pong_bool_te window_context_initialize(void)
     return PONG_FALSE;
   }
 
+  /* Create input mapper */
+  if (input_mapper_create(&input_mapper) == PONG_FALSE)
+  {
+    fprintf(stderr, "\n[Pong] Could not create an input mapper");
+    return PONG_FALSE;
+  }
+
   /* Register music and sound effects */
   const int SFX_BALL_HIT = audio_player_register_sound_effect("paddle_hit.wav");
   const int SFX_SCORE  = audio_player_register_sound_effect("score.wav");
@@ -177,49 +185,13 @@ pong_bool_te window_context_run(window_context_gameplay_tick_tf p_callback_tick)
         window_close_requested = PONG_TRUE;
     }
 
-    /* Map input state */
-    const int KEY_STATE_NONE = 1;
-    const int KEY_STATE_PRESSED = 2;
-    const int KEY_STATE_HELD = 3;
-    const int KEY_STATE_RELEASED = 4;
-    static int current_key_state = KEY_STATE_NONE;
+    /* Determine intermediate input state for all required keyboard keys */
+    const uint8_t * p_keyboard_state = SDL_GetKeyboardState(NULL);
+    input_mapper_set_intermediate_state(&input_mapper, p_keyboard_state);
 
-    /* Set scancode to look for */
-    const SDL_Scancode key_code = SDL_SCANCODE_ESCAPE;
-
-    /* Get state snapshot */
-    int keyboard_key_count;
-    const uint8_t * p_keyboard_state = SDL_GetKeyboardState(&keyboard_key_count);
-
-    /* Determine intermediate states */
-    const int key_currently_pressed = p_keyboard_state[key_code];
-    if (key_currently_pressed)
-    {
-      /* Pressed */
-      if (current_key_state == KEY_STATE_NONE)
-          current_key_state = KEY_STATE_PRESSED;
-      else if (current_key_state == KEY_STATE_PRESSED)
-        current_key_state = KEY_STATE_HELD;
-    }
-    else
-    {
-      /* Released */
-      if (current_key_state == KEY_STATE_PRESSED || current_key_state == KEY_STATE_HELD)
-        current_key_state = KEY_STATE_RELEASED;
-      else if (current_key_state == KEY_STATE_RELEASED)
-        current_key_state = KEY_STATE_NONE;
-    }
-
-    /* Check intermediate states */
-    if (current_key_state == KEY_STATE_PRESSED)
-      printf("\nPressed");
-    else if (current_key_state == KEY_STATE_RELEASED)
-      printf("\nReleased");
-    else if (current_key_state == KEY_STATE_HELD)
-      printf("\nHeld");
-    else if (current_key_state == KEY_STATE_NONE)
-      printf("\nNone");
-    fflush(stdout);
+    /* Dev close the window using escape */
+    if (input_mapper_custom_key_state_pressed(&input_mapper, INPUT_MAPPER_KEY_TYPE_QUIT_APPLICATION))
+      window_close_requested = PONG_TRUE;
 
     /* Tick the pong game */
 		const pong_bool_te keep_gameloop_alive = p_callback_tick(dts);
@@ -240,6 +212,7 @@ pong_bool_te window_context_run(window_context_gameplay_tick_tf p_callback_tick)
   /* Cleanup */
   batcher_cleanup();
   audio_player_cleanup();
+  input_mapper_destroy(&input_mapper);
   SDL_DestroyWindow(p_window);
   SDL_Quit();
 }
