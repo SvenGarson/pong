@@ -16,7 +16,7 @@ This document contains working notes throughout the completion of the project
   + Bouncing
     - [OK] Bounce of the top and bottom playfield region
     - [OK] Bounce of the paddles
-    - [  ] Bounce of the paddle based on the relative impact position -> game feel
+    - [OK] Bounce of the paddle based on the relative impact position
 - Playfield
   + [OK] Vertical divider in the middle of the play field
 - Round
@@ -31,13 +31,9 @@ This document contains working notes throughout the completion of the project
   + [OK] Reset ball to center position when one player scored
 - Menu
   + Main menu
-    + Play
-    + Options
-    + Quit to desktop
-  + Game paused
-    + Options
-    + Back to main menu
-    + Restart and whatnot
+    + [OK] Play
+    + [OK] Options
+    + [OK] Quit to desktop
   + Options
     - Window resolution
     - Fullscreen latch
@@ -45,8 +41,6 @@ This document contains working notes throughout the completion of the project
     - Input mapping
     - Virtual resolution and scaling
     - Sound: Music and sfx volume
-- Help
-  + Display controls everywhere
 - Q & A
   + Size and position everything to some virtual resolution or let things grow naturally?
     Also use min and max dimensions for everything.
@@ -58,10 +52,6 @@ This document contains working notes throughout the completion of the project
   + How to make builds for different platforms?
   + How to test the game?
 
-## Code
-- Use a linter
-- Implement testing and development build flags - Through executable arguments?
-
 ## Finalizing
 - Fixed aspect ratio i.e. virtual sized rendering
 - Fix the sync issue
@@ -71,7 +61,7 @@ This document contains working notes throughout the completion of the project
 - Documentation
 - Cleanup Makefile, indicate all depenencies etc.
 
-## Things to do for the next clean project
+## Organizing the next project better
 - cleanup resources on error and clean exits alike even though the OS 
   deallocates everything on the process stops
 - use a linter everywhere (also checking indentation)

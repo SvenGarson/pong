@@ -31,7 +31,7 @@ struct edge_collider {
 
 /* Constants */
 static const float PADDLE_PIXELS_PER_SECOND = 500.0f;
-static const float BALL_SPEED_PIXELS_PER_SECOND = 450.0f;
+static const float BALL_SPEED_PIXELS_PER_SECOND = 350.0f;
 const struct vec2f PADDLE_DIMENSIONS = { 5.0f, 80.0f };
 const int PADDLE_HIT_INSET = 50;
 
@@ -181,7 +181,7 @@ static void screen_integrate
       if (closest_corner_distance < 0.0f || p_closest_corner == NULL)
         continue;
 
-      /* Scale the ball velocity to the time-step - TODO-GS: Maybe just store the ball direction and set the scaled velocity once */
+      /* Scale the ball velocity to the time-step */
       struct vec2f scaled_ball_velocity = vec2f_scale(ball.velocity, dt);
 
       /* Determine time of impact by projecting the ball velocity - Ignore when ball moving away from surface*/
@@ -209,45 +209,48 @@ static void screen_integrate
       ball.position.x += ball.velocity.x * dt;
       ball.position.y += ball.velocity.y * dt;
 
-      /* Reset velocity magnitude */
+      /* Reset velocity magnitude so the ball keeps a constant speed after integration */
       ball.velocity = vec2f_normalize(ball.velocity);
       ball.velocity = vec2f_scale(ball.velocity, BALL_SPEED_PIXELS_PER_SECOND);
 
-      /* Done integrating within this frame */
+      /* Done integrating - Up to the next frame */
       break;
     }
     else
     {
+      /* Surface hit sound */
+      p_audio->play_sound_effect(AUDIO_PLAYER_SFX_TYPE_PADDLE_HIT);
+
       /* Collision - Move the ball to the impact surface */
       struct vec2f scaled_ball_velocity = vec2f_scale(ball.velocity, dt);
       ball.position.x += scaled_ball_velocity.x * earliest_impact_time;
       ball.position.y += scaled_ball_velocity.y * earliest_impact_time;
 
-      /* Surface hit sound */
-      p_audio->play_sound_effect(AUDIO_PLAYER_SFX_TYPE_PADDLE_HIT);
-
-      /* Check if the associated paddle is hit on the surface, if any */
-      pong_bool_te paddle_missed_ball = PONG_FALSE;
+      /* React to paddle and egde collider collisions differently */
       if (p_earliest_collider->p_associated_paddle != NULL)
       {
-        /* Project paddle extends onto the edge */
+        /* Potential paddle collision detection */
         struct region2Df region_paddle = region_for_paddles(p_earliest_collider->p_associated_paddle);
         struct range2f paddle_surface_range = project_region_onto_edge(&region_paddle, p_earliest_collider);
 
         struct region2Df region_ball = region_for_ball(&ball);
         struct range2f ball_surface_range = project_region_onto_edge(&region_ball, p_earliest_collider);
 
-        /* Deflect ball only if both extends overlap */
-        paddle_missed_ball = (
+        const pong_bool_te ball_hit_paddle = !(
           ball_surface_range.max < paddle_surface_range.min ||
           ball_surface_range.min > paddle_surface_range.max
         ) ? PONG_TRUE : PONG_FALSE;
-      }
 
-      /* Deflect the velocity when the paddle was hit or the collider has no paddle associated */
-      if (!paddle_missed_ball)
+        if (ball_hit_paddle)
+        {
+          /* Deflect ball in a way that the player can influence the trajectory - For not perfect deflection */
+          ball.velocity.x = ball.velocity.x + (2.0f * fabs(ball.velocity.x) * p_earliest_collider->surface_normal.x);
+          ball.velocity.y = ball.velocity.y + (2.0f * fabs(ball.velocity.y) * p_earliest_collider->surface_normal.y);
+        }
+      }
+      else
       {
-        /* TODO-GS: Compute direction based on where the ball hit the paddle */
+        /* Edge collision detection - Perfectly deflect the ball velocity on non-paddle surfaces */
         ball.velocity.x = ball.velocity.x + (2.0f * fabs(ball.velocity.x) * p_earliest_collider->surface_normal.x);
         ball.velocity.y = ball.velocity.y + (2.0f * fabs(ball.velocity.y) * p_earliest_collider->surface_normal.y);
       }
