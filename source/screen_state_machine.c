@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <screen_main_menu.h>
 #include <screen_pong.h>
+#include <screen_options.h>
 
 /* Private state */
 static pong_bool_te screen_change_requested = PONG_FALSE;
@@ -45,8 +46,10 @@ pong_bool_te screen_state_machine_initialize
     return PONG_FALSE;
   }
 
+  /* For now all the indicated screen types must be instanciated */
   p_screen_type_instance_list[SCREEN_TYPE_MAIN_MENU] = screen_main_menu_make();
   p_screen_type_instance_list[SCREEN_TYPE_PONG] = screen_pong_make();
+  p_screen_type_instance_list[SCREEN_TYPE_OPTIONS] = screen_options_make();
 
   /* Kick of with the provided screen and initialize it */
   active_screen = p_screen_type_instance_list[initial_screen_type];

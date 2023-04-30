@@ -65,6 +65,9 @@ static void screen_initialize
 	const struct gameplay_dependencies_windowing * p_windowing
 )
 {
+  /* Reset scores */
+  score_paddle_right = score_paddle_left = 0;
+
   /* Make the ball */
   ball = make_ball(
     p_windowing->window_width / 2.0f,
@@ -110,6 +113,13 @@ static void screen_integrate
 	screen_callback_change_request_tf change_request
 )
 {
+  /* Back to main menu */
+  if (p_input->key_pressed(INPUT_MAPPER_KEY_TYPE_MENU_RETURN))
+  {
+    p_audio->play_sound_effect(AUDIO_PLAYER_SFX_TYPE_MENU_RETURN);
+    change_request(SCREEN_TYPE_MAIN_MENU);
+  }
+
   /* Left paddles */
   if (p_input->key_held(INPUT_MAPPER_KEY_TYPE_LEFT_PADDLE_UP)) paddle_left.position.y += PADDLE_PIXELS_PER_SECOND * dt;
   if (p_input->key_held(INPUT_MAPPER_KEY_TYPE_LEFT_PADDLE_DOWN)) paddle_left.position.y -= PADDLE_PIXELS_PER_SECOND * dt;
@@ -278,10 +288,6 @@ static void screen_render
 	const struct gameplay_dependencies_windowing * p_windowing
 )
 {
-  /* Screen debugging */
-	p_batcher->color(0, 255, 0, 255);
-	p_batcher->text("Screen - Pong", 10, 590, 9 * 3);
-
   /* Playfield divider */
   const int FIELD_DIV_LENGTH = p_windowing->window_height / 20;
   const int FIELD_DIV_COUNT = 12;

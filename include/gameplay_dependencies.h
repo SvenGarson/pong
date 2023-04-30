@@ -11,6 +11,7 @@
 struct gameplay_dependencies_batcher {
 	void (* color)(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
 	void (* text)(const char * p_text, int base_x, int base_y, int font_height);
+	pong_bool_te (* text_region)(const char * p_text,int base_x,int base_y, int font_height, struct region2Di * p_out_region);
 	void (* quadf)(float min_x, float min_y, float max_x, float max_y);
 };
 
@@ -28,6 +29,7 @@ struct gameplay_dependencies_input {
 struct gameplay_dependencies_windowing {
 	int window_width;
 	int window_height;
+	void (* hook_close_window)(void);
 };
 
 #endif

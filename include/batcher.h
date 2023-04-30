@@ -3,6 +3,7 @@
 
 /* Includes */
 #include <pong_bool.h>
+#include <region2Di.h>
 
 /* Batcher function definitions */
 pong_bool_te batcher_initialize(void);
@@ -29,5 +30,13 @@ void batcher_quadf
   float max_y
 );
 void batcher_render(void);
+pong_bool_te batcher_text_region
+(
+  const char * p_text,
+  int base_x,
+  int base_y,
+  int font_height,
+  struct region2Di * p_out_region
+);
 
 #endif

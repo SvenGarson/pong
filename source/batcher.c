@@ -148,7 +148,7 @@ void batcher_text
   static struct text_renderer_cache text_info;
   text_renderer_text_info(p_text, base_x, base_y, font_height, &text_info);
 
-  batcher_texture_handle(1); /* TODO-GS: Get actual texture */
+  batcher_texture_handle(text_glyph_texture_handle);
   for (int glyph_index = 0; glyph_index < text_info.glyph_infos_generated; glyph_index++)
   {
     const struct text_renderer_glyph_info * p_info = text_info.glyph_infos + glyph_index;
@@ -284,4 +284,58 @@ void batcher_render(void)
 
   /* Clear the buffer */
   batched_triangles = 0;
+}
+
+pong_bool_te batcher_text_region
+(
+  const char * p_text,
+  int base_x,
+  int base_y,
+  int font_height,
+  struct region2Di * p_out_region
+)
+{
+  /* Determine the dimensions of the text rendered as 2D region */
+  struct text_renderer_cache text_info;
+  text_renderer_text_info(p_text, base_x, base_y, font_height, &text_info);
+  if (text_info.glyph_infos_generated <= 0)
+    return PONG_FALSE;
+
+  /* Find the min and max extends of the region the text takes up */
+  const int * p_min_x = NULL;
+  const int * p_min_y = NULL;
+  const int * p_max_x = NULL;
+  const int * p_max_y = NULL;
+  for (int glyph_index = 0; glyph_index < text_info.glyph_infos_generated; glyph_index++)
+  {
+    const struct text_renderer_glyph_info * const p_info = text_info.glyph_infos + glyph_index;
+
+    /* Initialize */
+    if (p_min_x == NULL)
+    {
+      p_min_x = &p_info->render_region.min.x;
+      p_min_y = &p_info->render_region.min.y;
+      p_max_x = &p_info->render_region.max.x;
+      p_max_y = &p_info->render_region.max.y;
+      continue;
+    }
+
+    /* Determine the min/max for the final region */
+    if (p_info->render_region.min.x < *p_min_x)
+      p_min_x = &p_info->render_region.min.x;
+    if (p_info->render_region.max.x > *p_max_x)
+      p_max_x = &p_info->render_region.max.x;
+
+    if (p_info->render_region.min.y < *p_min_y)
+      p_min_y = &p_info->render_region.min.y;
+    if (p_info->render_region.max.y > *p_max_y)
+      p_max_y = &p_info->render_region.max.y;
+  }
+
+  p_out_region->min.x = *p_min_x;
+  p_out_region->min.y = *p_min_y;
+  p_out_region->max.x = *p_max_x;
+  p_out_region->max.y = *p_max_y;
+
+  return PONG_TRUE;
 }

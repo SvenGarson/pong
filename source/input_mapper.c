@@ -74,7 +74,13 @@ pong_bool_te input_mapper_create(struct input_mapper_instance * p_out_instance)
 	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_LEFT_PADDLE_DOWN, SDL_SCANCODE_LCTRL);
 	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_RIGHT_PADDLE_UP, SDL_SCANCODE_RSHIFT);
 	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_RIGHT_PADDLE_DOWN, SDL_SCANCODE_RCTRL);
-	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_QUIT_APPLICATION, SDL_SCANCODE_ESCAPE);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_QUIT_APPLICATION, SDL_SCANCODE_F4);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_SELECT, SDL_SCANCODE_RETURN);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_RETURN, SDL_SCANCODE_ESCAPE);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_UP, SDL_SCANCODE_UP);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_DOWN, SDL_SCANCODE_DOWN);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_LEFT, SDL_SCANCODE_LEFT);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_RIGHT, SDL_SCANCODE_RIGHT);
 
 	/* Build a list of custom key input states */
 	p_out_instance->p_states = malloc(sizeof(enum input_mapper_key_state) * INPUT_MAPPER_KEY_TYPE_COUNT);

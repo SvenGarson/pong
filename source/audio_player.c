@@ -67,6 +67,9 @@ pong_bool_te audio_player_initialize(void)
 	/* Register music and sound effects */
   audio_player_register_sound_effect(AUDIO_PLAYER_SFX_TYPE_PADDLE_HIT, "paddle_hit.wav");
   audio_player_register_sound_effect(AUDIO_PLAYER_SFX_TYPE_SCORE, "score.wav");
+  audio_player_register_sound_effect(AUDIO_PLAYER_SFX_TYPE_MENU_SELECT, "menu_select.wav");
+  audio_player_register_sound_effect(AUDIO_PLAYER_SFX_TYPE_MENU_CHOOSE, "menu_choose.wav");
+  audio_player_register_sound_effect(AUDIO_PLAYER_SFX_TYPE_MENU_RETURN, "menu_return.wav");
 
 	/* Success */
 	return PONG_TRUE;

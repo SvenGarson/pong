@@ -24,7 +24,7 @@ pong_bool_te gameplay_tick_callback
 pong_bool_te initialize_callback(const struct gameplay_dependencies_windowing * p_windowing)
 {
   /* Initialize the screen state machine */
-  if (screen_state_machine_initialize(SCREEN_TYPE_PONG, p_windowing) == PONG_FALSE)
+  if (screen_state_machine_initialize(SCREEN_TYPE_MAIN_MENU, p_windowing) == PONG_FALSE)
   {
     fprintf(stderr, "\n[Pong] Could not initialize the screen state machine");
     return PONG_FALSE;

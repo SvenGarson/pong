@@ -23,6 +23,7 @@ static const int WINDOW_CONTEXT_HEIGHT = 600;
 static SDL_Window * p_window = NULL;
 static SDL_Surface * p_surface = NULL;
 static SDL_GLContext * p_opengl_context = NULL;
+pong_bool_te window_close_requested = PONG_FALSE;
 static struct input_mapper_instance input_mapper;
 struct gameplay_dependencies_batcher dependency_batcher;
 struct gameplay_dependencies_audio dependency_audio;
@@ -50,24 +51,30 @@ static double time_in_seconds(void)
 }
 
 /* Input mapper instance wrappers */
-pong_bool_te input_mapper_none_wrapper(enum input_mapper_key_type custom_key_type)
+static pong_bool_te input_mapper_none_wrapper(enum input_mapper_key_type custom_key_type)
 {
   return input_mapper_custom_key_state_none(&input_mapper, custom_key_type);
 }
 
-pong_bool_te input_mapper_pressed_wrapper(enum input_mapper_key_type custom_key_type)
+static pong_bool_te input_mapper_pressed_wrapper(enum input_mapper_key_type custom_key_type)
 {
   return input_mapper_custom_key_state_pressed(&input_mapper, custom_key_type);
 }
 
-pong_bool_te input_mapper_held_wrapper(enum input_mapper_key_type custom_key_type)
+static pong_bool_te input_mapper_held_wrapper(enum input_mapper_key_type custom_key_type)
 {
   return input_mapper_custom_key_state_held(&input_mapper, custom_key_type);
 }
 
-pong_bool_te input_mapper_released_wrapper(enum input_mapper_key_type custom_key_type)
+static pong_bool_te input_mapper_released_wrapper(enum input_mapper_key_type custom_key_type)
 {
   return input_mapper_custom_key_state_released(&input_mapper, custom_key_type);
+}
+
+/* Windowing dependency hook functions */
+static void hook_close_request(void)
+{
+  window_close_requested = PONG_TRUE;
 }
 
 /* Function prototypes */
@@ -164,6 +171,7 @@ pong_bool_te window_context_initialize(window_context_initialize_tf p_callback_i
   dependency_batcher.color = batcher_color;
   dependency_batcher.text = batcher_text;
   dependency_batcher.quadf = batcher_quadf;
+  dependency_batcher.text_region = batcher_text_region;
 
   /* Audio player */
   dependency_audio.play_sound_effect = audio_player_play_sound_effect;
@@ -176,6 +184,7 @@ pong_bool_te window_context_initialize(window_context_initialize_tf p_callback_i
 
   /* Windowing related */
   SDL_GetWindowSize(p_window, &dependency_windowing.window_width, &dependency_windowing.window_height);
+  dependency_windowing.hook_close_window = hook_close_request;
 
   /* Success governed by the external initialization callback */
   return p_callback_initialize(&dependency_windowing);
@@ -189,7 +198,7 @@ pong_bool_te window_context_run(window_context_gameplay_tick_tf p_callback_tick)
   double last_time_in_seconds = time_in_seconds();
 
   /* Gameloop */
-  pong_bool_te window_close_requested = PONG_FALSE;
+  window_close_requested = PONG_FALSE;
   while(window_close_requested == PONG_FALSE)
   {
     /* Integration */
