@@ -77,6 +77,96 @@ static void hook_close_request(void)
   window_close_requested = PONG_TRUE;
 }
 
+static pong_bool_te hook_window_is_fullscreen(void)
+{
+  return (SDL_GetWindowFlags(p_window) & SDL_WINDOW_FULLSCREEN) ? PONG_TRUE : PONG_FALSE;
+}
+
+static pong_bool_te hook_window_set_fullscreen(void)
+{
+  SDL_SetWindowFullscreen(p_window, SDL_WINDOW_FULLSCREEN);
+  return hook_window_is_fullscreen();
+}
+
+static pong_bool_te hook_window_set_desktop_display_mode(void)
+{
+  /* Get the current display mode as default */
+  SDL_DisplayMode desktop_display_mode;
+  if (SDL_GetDesktopDisplayMode(0, &desktop_display_mode) < 0)
+  {
+    fprintf(
+      stderr,
+      "\n[Pong] Could not get desktop display mode - Error: %s",
+      SDL_GetError()
+    );
+    return PONG_FALSE;
+  }
+
+  /* Quit fullscreen mode - This should be unnecessary ... */
+  if (SDL_SetWindowFullscreen(p_window, 0) < 0)
+  {
+    fprintf(
+      stderr,
+      "\n[Pong] Could quit fullscreen mode - Error: %s",
+      SDL_GetError()
+    );
+    return PONG_FALSE;
+  }
+
+  /* Set display that mode */
+  if (SDL_SetWindowDisplayMode(p_window, &desktop_display_mode) < 0)
+  {
+    fprintf(
+      stderr,
+      "\n[Pong] Could not set to desktop display mode - Error: %s",
+      SDL_GetError()
+    );
+    return PONG_FALSE;
+  }
+
+  /* Success */
+  return PONG_TRUE;
+}
+
+static pong_bool_te hook_window_get_current_display_mode(SDL_DisplayMode * p_out_display_mode)
+{
+  return SDL_GetCurrentDisplayMode(0, p_out_display_mode) ? PONG_TRUE : PONG_FALSE;
+}
+
+static int hook_window_number_of_display_modes(void)
+{
+  return SDL_GetNumDisplayModes(0);
+}
+
+static void hook_window_disable_fullscreen(void)
+{
+  if (SDL_SetWindowFullscreen(p_window, 0) < 0)
+  {
+    fprintf(
+      stderr,
+      "\n[Pong] Could quit fullscreen mode - Error: %s",
+      SDL_GetError()
+    );
+  }
+}
+
+static void hook_window_set_display_mode(const SDL_DisplayMode * p_chosen_display_mode)
+{
+  hook_window_disable_fullscreen();
+
+  if (SDL_SetWindowDisplayMode(p_window, p_chosen_display_mode) < 0)
+  {
+    fprintf(
+      stderr,
+      "\n[Pong] Could not set to desktop display mode - Error: %s",
+      SDL_GetError()
+    );
+  }
+
+  /* Set window dimensions */
+  SDL_SetWindowSize(p_window, p_chosen_display_mode->w, p_chosen_display_mode->h);
+}
+
 /* Function prototypes */
 pong_bool_te window_context_initialize(window_context_initialize_tf p_callback_initialize)
 {
@@ -185,6 +275,12 @@ pong_bool_te window_context_initialize(window_context_initialize_tf p_callback_i
   /* Windowing related */
   SDL_GetWindowSize(p_window, &dependency_windowing.window_width, &dependency_windowing.window_height);
   dependency_windowing.hook_close_window = hook_close_request;
+  dependency_windowing.hook_window_is_fullscreen = hook_window_is_fullscreen;
+  dependency_windowing.hook_window_set_fullscreen = hook_window_set_fullscreen; 
+  dependency_windowing.hook_window_disable_fullscreen = hook_window_disable_fullscreen;
+  dependency_windowing.hook_window_set_desktop_display_mode = hook_window_set_desktop_display_mode;
+  dependency_windowing.hook_window_number_of_display_modes = hook_window_number_of_display_modes;
+  dependency_windowing.hook_window_set_display_mode = hook_window_set_display_mode;
 
   /* Success governed by the external initialization callback */
   return p_callback_initialize(&dependency_windowing);

@@ -30,6 +30,12 @@ struct gameplay_dependencies_windowing {
 	int window_width;
 	int window_height;
 	void (* hook_close_window)(void);
+	pong_bool_te (* hook_window_is_fullscreen)(void);
+	void (* hook_window_disable_fullscreen)(void);
+	pong_bool_te (* hook_window_set_fullscreen)(void);
+	pong_bool_te (* hook_window_set_desktop_display_mode)(void);
+	void (* hook_window_set_display_mode)(const SDL_DisplayMode * p_desired_display_mode);
+	int (* hook_window_number_of_display_modes)(void);
 };
 
 #endif

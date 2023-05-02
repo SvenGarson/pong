@@ -81,6 +81,9 @@ pong_bool_te input_mapper_create(struct input_mapper_instance * p_out_instance)
 	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_DOWN, SDL_SCANCODE_DOWN);
 	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_LEFT, SDL_SCANCODE_LEFT);
 	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_MENU_RIGHT, SDL_SCANCODE_RIGHT);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_DEV_1, SDL_SCANCODE_F1);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_DEV_2, SDL_SCANCODE_F2);
+	register_usable_mapping(p_out_instance->p_mappings, INPUT_MAPPER_KEY_TYPE_DEV_3, SDL_SCANCODE_F3);
 
 	/* Build a list of custom key input states */
 	p_out_instance->p_states = malloc(sizeof(enum input_mapper_key_state) * INPUT_MAPPER_KEY_TYPE_COUNT);

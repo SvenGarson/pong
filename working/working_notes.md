@@ -35,12 +35,8 @@ This document contains working notes throughout the completion of the project
     + [OK] Options
     + [OK] Quit to desktop
   + Options
-    - Window resolution
-    - Fullscreen latch
-    - Display sync options
-    - Input mapping
-    - Virtual resolution and scaling
-    - Sound: Music and sfx volume
+    - [OK] Fullscreen latch
+    - [OK] Window resolution
 - Q & A
   + Size and position everything to some virtual resolution or let things grow naturally?
     Also use min and max dimensions for everything.
