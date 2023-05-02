@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <input_mapper.h>
 #include <gameplay_dependencies.h>
+#include <vec2f.h>
 
 /* Defines */
 #define WINDOW_MAX_TITLE_LENGTH (64)
@@ -167,6 +168,20 @@ static void hook_window_set_display_mode(const SDL_DisplayMode * p_chosen_displa
   SDL_SetWindowSize(p_window, p_chosen_display_mode->w, p_chosen_display_mode->h);
 }
 
+static void update_viewport_an_projection(int new_width, int new_height)
+{
+  /* Set projection and viewport */
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  gluOrtho2D(0, new_width, 0, new_height);
+
+  /* Viewport */
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  glViewport(0, 0, new_width, new_height);
+  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+}
+
 /* Function prototypes */
 pong_bool_te window_context_initialize(window_context_initialize_tf p_callback_initialize)
 {
@@ -228,7 +243,7 @@ pong_bool_te window_context_initialize(window_context_initialize_tf p_callback_i
   glLoadIdentity();
 
   glViewport(0, 0, WINDOW_CONTEXT_WIDTH, WINDOW_CONTEXT_HEIGHT);
-  glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+  glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
   log_opengl_error("\nInitialization");
 
@@ -326,8 +341,15 @@ pong_bool_te window_context_run(window_context_gameplay_tick_tf p_callback_tick)
     SDL_Event event;
     while (SDL_PollEvent(&event))
     {
+      /* Closing the window */
       if (event.type == SDL_QUIT)
         window_close_requested = PONG_TRUE;
+
+      /* Re-sizing */
+      if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
+      {
+        update_viewport_an_projection(event.window.data1, event.window.data2);
+      }
     }
 
     /* Determine intermediate input state for all required keyboard keys */

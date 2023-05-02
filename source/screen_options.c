@@ -268,6 +268,10 @@ static void screen_render
 	const struct gameplay_dependencies_windowing * p_windowing
 )
 {
+	/* Background */
+	p_batcher->color(25, 25, 75, 255);
+	p_batcher->quadf(0, 0, 800, 600);
+
 	/* Render the options menu with currently selected values */
 	struct vec2i menu_item_cursor = menu_options.base_position;
 	static char option_description_buffer[MAX_OPTIONS_DESCRIPTION_LENGTH];

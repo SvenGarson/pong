@@ -291,6 +291,10 @@ static void screen_render
 	const struct gameplay_dependencies_windowing * p_windowing
 )
 {
+  /* Background */
+  p_batcher->color(25, 75, 75, 255);
+  p_batcher->quadf(0, 0, 800, 600);
+
   /* Playfield divider */
   const int FIELD_DIV_LENGTH = p_windowing->window_height / 20;
   const int FIELD_DIV_COUNT = 12;

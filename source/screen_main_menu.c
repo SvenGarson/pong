@@ -128,6 +128,10 @@ static void screen_render
 	const struct gameplay_dependencies_windowing * p_windowing
 )
 {
+	/* Background */
+	p_batcher->color(25, 75, 25, 255);
+	p_batcher->quadf(0, 0, 800, 600);
+
 	/* Render menu items */
 	struct vec2f menu_item_cursor = main_menu.base_position;
 	for (int item_index = 0; item_index < sizeof(main_menu_items) / sizeof(struct menu_item); item_index++)
